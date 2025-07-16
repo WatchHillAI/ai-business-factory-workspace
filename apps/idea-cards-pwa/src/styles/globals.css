@@ -1,6 +1,37 @@
 /* Global styles for AI Business Factory - Idea Cards PWA */
 
+/* Import dark theme */
+@import './theme.css';
+
 /* Tailwind CSS loaded via CDN in index.html */
+
+/* Global dark mode defaults */
+body {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+/* Default to dark mode */
+:root {
+  color-scheme: dark light;
+}
+
+/* Scrollbar styling for dark mode */
+.dark::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.dark::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.dark::-webkit-scrollbar-thumb:hover {
+  background: var(--border-accent);
+}
 
 /* Custom animations for card interactions */
 @keyframes slideInUp {
