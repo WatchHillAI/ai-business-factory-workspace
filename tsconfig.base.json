@@ -1,0 +1,25 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@ai-business-factory/ui-components": ["packages/ui-components/src/index.ts"],
+      "@ai-business-factory/ai-service": ["packages/ai-service/src/index.ts"],
+      "@ai-business-factory/auth": ["packages/auth/src/index.ts"],
+      "@ai-business-factory/database": ["packages/database/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
