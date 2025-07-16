@@ -1,0 +1,85 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint workspace
+        run: npm run lint --if-present
+
+      - name: Run tests
+        run: npm run test -- --watchAll=false --passWithNoTests
+
+      - name: Type check
+        run: npm run typecheck --if-present
+
+  build-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [bmc-pwa, idea-cards-pwa]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build ${{ matrix.app }}
+        run: npm run build:${{ matrix.app }}
+
+      - name: Check build output
+        run: |
+          if [ ! -d "dist/apps/${{ matrix.app }}" ]; then
+            echo "❌ Build output directory not found for ${{ matrix.app }}"
+            exit 1
+          fi
+          
+          if [ ! -f "dist/apps/${{ matrix.app }}/index.html" ]; then
+            echo "❌ index.html not found in build output for ${{ matrix.app }}"
+            exit 1
+          fi
+          
+          echo "✅ Build output verification passed for ${{ matrix.app }}"
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=high
+
+      - name: Check for outdated dependencies
+        run: npm outdated || true

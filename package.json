@@ -1,17 +1,40 @@
 {
-  "name": "ai-business-factory-workspace",
+  "name": "@ai-business-factory/workspace",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Shared PWA workspace for AI Business Factory applications",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "nx run-many --target=serve --all",
+    "dev": "nx run-many --target=serve --all --parallel",
+    "dev:bmc": "nx serve bmc-pwa",
+    "dev:ideas": "nx serve idea-cards-pwa",
     "build": "nx run-many --target=build --all",
+    "build:bmc-pwa": "nx build bmc-pwa",
+    "build:idea-cards-pwa": "nx build idea-cards-pwa",
+    "build:ui-components": "nx build ui-components",
     "test": "nx run-many --target=test --all",
-    "lint": "nx run-many --target=lint --all"
+    "lint": "nx run-many --target=lint --all",
+    "typecheck": "nx run-many --target=typecheck --all",
+    "clean": "nx reset && rm -rf dist/ && rm -rf .nx/",
+    "preview": "nx run-many --target=preview --all",
+    "preview:bmc": "nx preview bmc-pwa",
+    "preview:ideas": "nx preview idea-cards-pwa"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "pwa",
+    "business-model-canvas",
+    "idea-discovery",
+    "ai-powered",
+    "serverless",
+    "nx-workspace",
+    "react",
+    "typescript"
+  ],
+  "author": "WatchHill AI",
+  "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
     "@nx/eslint": "^21.2.4",
@@ -41,6 +64,14 @@
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WatchHillAI/ai-business-factory-workspace.git"
   },
   "nx": {}
 }
