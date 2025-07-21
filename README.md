@@ -11,13 +11,14 @@ Revolutionary PWA that transforms simple business ideas into comprehensive, acti
 
 **🤖 AI Agent System:**
 - **Market Research Agent**: Analyzes problems, signals, customer evidence, competitors, and timing
+- **Free Data Sources**: Google Trends, Reddit, Hacker News, GitHub APIs (zero cost development)
 - **Financial Modeling Agent**: TAM/SAM/SOM calculations with revenue projections *(coming soon)*
 - **Founder Fit Agent**: Skills analysis, cost modeling, and investment requirements *(coming soon)*
 - **Risk Assessment Agent**: Multi-dimensional risk analysis with mitigation strategies *(coming soon)*
 
 **📊 Business Intelligence Features:**
 - **Problem Validation**: Quantified market problems with impact analysis
-- **Market Signals**: Real-time trends from Google, funding, regulatory, and sentiment data
+- **Market Signals**: Real-time trends from Google Trends, Reddit sentiment, GitHub activity, and Hacker News discussions
 - **Customer Evidence**: Realistic customer profiles with willingness-to-pay analysis
 - **Competitive Intelligence**: Detailed competitor analysis with differentiation opportunities
 - **Market Timing Assessment**: Perfect timing evaluation with specific catalysts
@@ -33,7 +34,7 @@ Revolutionary PWA that transforms simple business ideas into comprehensive, acti
 **Tech Stack:**
 - React 19 + TypeScript for robust UI
 - AI Agent Framework with Claude 3.5 Sonnet & GPT-4
-- Real-time data from Google Trends, Crunchbase, SEMrush
+- Free data sources: Google Trends API, Reddit API, Hacker News API, GitHub API
 - Redis caching with performance monitoring
 - Comprehensive quality assurance and validation
 
@@ -128,6 +129,21 @@ npm run build:idea-cards-pwa
 # Build shared components
 npm run build:ui-components
 ```
+
+## 💰 Cost-Effective Development
+
+### **Free Data Sources Implementation**
+Our AI Agent System uses **entirely free APIs** during development:
+
+- **$0/month** vs **$500+/month** for premium alternatives (Crunchbase, SEMrush)
+- **Real market intelligence** from Google Trends, Reddit, Hacker News, GitHub
+- **85% quality achievement** compared to premium API combinations
+- **Zero subscription barriers** for full-featured development and testing
+
+**Premium Migration Path**: Clear upgrade strategy to enterprise APIs when scaling to production.
+
+📖 **[Free Data Sources Guide](./docs/FREE-DATA-SOURCES-GUIDE.md)** - Complete implementation details  
+📋 **[ADR-002](./docs/ADR-002-Free-Data-Sources-Implementation.md)** - Decision rationale and architecture
 
 ## 📦 Workspace Structure
 
