@@ -145,7 +145,7 @@ export const IdeaDetailView: React.FC<IdeaDetailViewProps> = ({
       </header>
 
       {/* Tab Navigation */}
-      <nav className={`sticky top-16 z-10 border-b transition-colors duration-200 ${
+      <nav className={`border-b transition-colors duration-200 ${
         isDark ? 'dark-bg-secondary dark-border-primary' : 'bg-white border-gray-200'
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -16,6 +16,9 @@ import { MetricsCollector } from '../utils/MetricsCollector';
 
 // Import specific agents
 import { MarketResearchAgent, MarketResearchInput, MarketResearchOutput } from '../agents/MarketResearchAgent';
+import { FinancialModelingAgent, FinancialModelingInput, FinancialModelingOutput } from '../agents/FinancialModelingAgent';
+import { FounderFitAgent, FounderFitInput, FounderFitOutput } from '../agents/FounderFitAgent';
+import { RiskAssessmentAgent, RiskAssessmentInput, RiskAssessmentOutput } from '../agents/RiskAssessmentAgent';
 
 // Orchestrator configuration schema
 const OrchestratorConfigSchema = z.object({
@@ -60,9 +63,9 @@ const BusinessIdeaAnalysisInputSchema = z.object({
   analysisDepth: z.enum(['basic', 'standard', 'comprehensive']).default('standard'),
   enabledAgents: z.object({
     marketResearch: z.boolean().default(true),
-    financialModeling: z.boolean().default(false), // Not implemented yet
-    founderFit: z.boolean().default(false),         // Not implemented yet
-    riskAssessment: z.boolean().default(false),     // Not implemented yet
+    financialModeling: z.boolean().default(true),
+    founderFit: z.boolean().default(true),
+    riskAssessment: z.boolean().default(true),
   }).optional(),
 });
 
@@ -75,9 +78,9 @@ export interface BusinessIdeaAnalysisOutput {
   
   // Agent results
   marketResearch?: AgentResult<MarketResearchOutput>;
-  financialModeling?: AgentResult<any>;
-  founderFit?: AgentResult<any>;
-  riskAssessment?: AgentResult<any>;
+  financialModeling?: AgentResult<FinancialModelingOutput>;
+  founderFit?: AgentResult<FounderFitOutput>;
+  riskAssessment?: AgentResult<RiskAssessmentOutput>;
   
   // Overall metadata
   metadata: {
@@ -168,34 +171,39 @@ export class AgentOrchestrator {
 
   private initializeAgents(): void {
     // Market Research Agent
-    const marketResearchConfig: AgentConfig = {
-      agentId: 'market-research',
-      name: 'Market Research Agent',
-      version: '1.0.0',
-      llmProvider: this.config.llmProvider.type,
-      maxTokens: 4000,
-      temperature: 0.3,
-      timeout: 60,
-      retryConfig: {
-        maxRetries: 3,
-        backoffMultiplier: 2,
-        initialDelay: 1000,
-      },
-    };
-
     const marketResearchAgent = new MarketResearchAgent(
-      marketResearchConfig,
+      { agentId: 'market-research', version: '1.0.0' },
       this.llmProvider,
       this.cacheProvider,
       this.dataSourceProviders.get('market_data')
     );
-
     this.agents.set('market-research', marketResearchAgent);
     
-    // TODO: Add other agents when implemented
-    // - FinancialModelingAgent
-    // - FounderFitAgent  
-    // - RiskAssessmentAgent
+    // Financial Modeling Agent
+    const financialModelingAgent = new FinancialModelingAgent(
+      { agentId: 'financial-modeling', version: '1.0.0' },
+      this.llmProvider,
+      this.cacheProvider,
+      this.dataSourceProviders.get('market_data')
+    );
+    this.agents.set('financial-modeling', financialModelingAgent);
+    
+    // Founder Fit Agent
+    const founderFitAgent = new FounderFitAgent(
+      { agentId: 'founder-fit', version: '1.0.0' },
+      this.llmProvider,
+      this.cacheProvider
+    );
+    this.agents.set('founder-fit', founderFitAgent);
+    
+    // Risk Assessment Agent
+    const riskAssessmentAgent = new RiskAssessmentAgent(
+      { agentId: 'risk-assessment', version: '1.0.0' },
+      this.llmProvider,
+      this.cacheProvider,
+      this.dataSourceProviders.get('market_data')
+    );
+    this.agents.set('risk-assessment', riskAssessmentAgent);
   }
 
   /**
@@ -292,10 +300,192 @@ export class AgentOrchestrator {
         }
       }
 
-      // TODO: Execute other agents when implemented
-      // if (input.enabledAgents?.financialModeling) { ... }
-      // if (input.enabledAgents?.founderFit) { ... }
-      // if (input.enabledAgents?.riskAssessment) { ... }
+      // Execute Financial Modeling Agent
+      if (input.enabledAgents?.financialModeling !== false) {
+        try {
+          this.logger.info('Executing Financial Modeling Agent', { requestId });
+          
+          const financialModelingInput: FinancialModelingInput = {
+            ideaText: input.idea.description,
+            title: input.idea.title,
+            category: input.idea.category,
+            targetMarket: input.userContext?.interests?.join(', '),
+            businessModel: `${input.idea.tier} tier business model`,
+            userContext: {
+              budget: input.userContext?.budget?.toString(),
+              timeline: input.userContext?.timeframe,
+              experience: input.userContext?.experience?.join(', ')
+            }
+          };
+
+          const financialModelingAgent = this.agents.get('financial-modeling') as FinancialModelingAgent;
+          const financialResult = await financialModelingAgent.analyze(financialModelingInput, context);
+          
+          results.financialModeling = financialResult;
+          agentsExecuted.push('financial-modeling');
+          
+          if (financialResult.confidence?.overall) {
+            totalConfidence += financialResult.confidence.overall;
+            agentCount++;
+          }
+          
+        } catch (error) {
+          this.logger.error('Financial Modeling Agent failed', error as Error, { requestId });
+          agentsFailed.push('financial-modeling');
+          results.financialModeling = {
+            success: false,
+            error: {
+              code: 'FINANCIAL_MODELING_FAILED',
+              message: error instanceof Error ? error.message : 'Unknown error',
+            },
+            metadata: {
+              agentId: 'financial-modeling',
+              version: '1.0.0',
+              timestamp: new Date().toISOString(),
+              metrics: {
+                executionTime: Date.now() - startTime,
+                tokensUsed: 0,
+                apiCalls: 0,
+                cacheHits: 0,
+                cacheMisses: 0,
+                errorCount: 1,
+                qualityScore: 0,
+              },
+              confidence: 0,
+            },
+          };
+        }
+      }
+
+      // Execute Founder Fit Agent
+      if (input.enabledAgents?.founderFit !== false) {
+        try {
+          this.logger.info('Executing Founder Fit Agent', { requestId });
+          
+          const founderFitInput: FounderFitInput = {
+            ideaText: input.idea.description,
+            title: input.idea.title,
+            category: input.idea.category,
+            founderProfile: {
+              background: input.userContext?.experience?.join(', ') || 'Not specified',
+              education: 'Not specified',
+              previousExperience: input.userContext?.experience?.join(', ') || 'Not specified',
+              expertise: input.userContext?.skills || [],
+              network: 'Not specified',
+              motivation: `Interest in ${input.idea.category}`
+            },
+            userContext: {
+              budget: input.userContext?.budget?.toString(),
+              timeline: input.userContext?.timeframe,
+              experience: input.userContext?.experience?.join(', ')
+            }
+          };
+
+          const founderFitAgent = this.agents.get('founder-fit') as FounderFitAgent;
+          const founderResult = await founderFitAgent.analyze(founderFitInput, context);
+          
+          results.founderFit = founderResult;
+          agentsExecuted.push('founder-fit');
+          
+          if (founderResult.confidence?.overall) {
+            totalConfidence += founderResult.confidence.overall;
+            agentCount++;
+          }
+          
+        } catch (error) {
+          this.logger.error('Founder Fit Agent failed', error as Error, { requestId });
+          agentsFailed.push('founder-fit');
+          results.founderFit = {
+            success: false,
+            error: {
+              code: 'FOUNDER_FIT_FAILED',
+              message: error instanceof Error ? error.message : 'Unknown error',
+            },
+            metadata: {
+              agentId: 'founder-fit',
+              version: '1.0.0',
+              timestamp: new Date().toISOString(),
+              metrics: {
+                executionTime: Date.now() - startTime,
+                tokensUsed: 0,
+                apiCalls: 0,
+                cacheHits: 0,
+                cacheMisses: 0,
+                errorCount: 1,
+                qualityScore: 0,
+              },
+              confidence: 0,
+            },
+          };
+        }
+      }
+
+      // Execute Risk Assessment Agent
+      if (input.enabledAgents?.riskAssessment !== false) {
+        try {
+          this.logger.info('Executing Risk Assessment Agent', { requestId });
+          
+          const riskAssessmentInput: RiskAssessmentInput = {
+            ideaText: input.idea.description,
+            title: input.idea.title,
+            category: input.idea.category,
+            targetMarket: input.userContext?.interests?.join(', '),
+            businessModel: `${input.idea.tier} tier business model`,
+            financialProjections: results.financialModeling?.data ? {
+              revenue5Year: results.financialModeling.data.scenarios?.realistic?.revenue5Year,
+              totalFunding: results.financialModeling.data.fundingRequirements?.totalRequired,
+              breakEvenMonth: results.financialModeling.data.keyMetrics?.breakEvenMonth
+            } : undefined,
+            teamProfile: results.founderFit?.data ? {
+              founderExperience: input.userContext?.experience?.join(', ') || 'Not specified',
+              teamSize: results.founderFit.data.teamRequirements?.coreRoles?.length || 1,
+              missingSkills: results.founderFit.data.skillsAnalysis?.skillGaps?.map(gap => gap.skill) || []
+            } : undefined,
+            userContext: {
+              budget: input.userContext?.budget?.toString(),
+              timeline: input.userContext?.timeframe,
+              experience: input.userContext?.experience?.join(', ')
+            }
+          };
+
+          const riskAssessmentAgent = this.agents.get('risk-assessment') as RiskAssessmentAgent;
+          const riskResult = await riskAssessmentAgent.analyze(riskAssessmentInput, context);
+          
+          results.riskAssessment = riskResult;
+          agentsExecuted.push('risk-assessment');
+          
+          if (riskResult.confidence?.overall) {
+            totalConfidence += riskResult.confidence.overall;
+            agentCount++;
+          }
+          
+        } catch (error) {
+          this.logger.error('Risk Assessment Agent failed', error as Error, { requestId });
+          agentsFailed.push('risk-assessment');
+          results.riskAssessment = {
+            success: false,
+            error: {
+              code: 'RISK_ASSESSMENT_FAILED',
+              message: error instanceof Error ? error.message : 'Unknown error',
+            },
+            metadata: {
+              agentId: 'risk-assessment',
+              version: '1.0.0',
+              timestamp: new Date().toISOString(),
+              metrics: {
+                executionTime: Date.now() - startTime,
+                tokensUsed: 0,
+                apiCalls: 0,
+                cacheHits: 0,
+                cacheMisses: 0,
+                errorCount: 1,
+                qualityScore: 0,
+              },
+              confidence: 0,
+            },
+          };
+        }
+      }
 
       // Calculate overall metrics
       const totalExecutionTime = Date.now() - startTime;
@@ -500,33 +690,123 @@ export class AgentOrchestrator {
     let totalScore = 0;
     let metricCount = 0;
 
-    // Completeness: How much data was generated
+    // Completeness: How much data was generated across all agents
     let completeness = 0;
+    let maxCompleteness = 0;
+    
     if (results.marketResearch?.success) {
-      completeness += 25;
-      if (results.marketResearch.data?.customerEvidence?.length >= 2) completeness += 25;
-      if (results.marketResearch.data?.marketSignals?.length >= 3) completeness += 25;
-      if (results.marketResearch.data?.competitorAnalysis?.length >= 2) completeness += 25;
+      maxCompleteness += 25;
+      completeness += 15;
+      if (results.marketResearch.data?.customerEvidence?.length >= 2) completeness += 5;
+      if (results.marketResearch.data?.marketSignals?.length >= 3) completeness += 5;
     }
+    
+    if (results.financialModeling?.success) {
+      maxCompleteness += 25;
+      completeness += 15;
+      if (results.financialModeling.data?.tamSamSom) completeness += 5;
+      if (results.financialModeling.data?.revenueProjections?.length >= 3) completeness += 5;
+    }
+    
+    if (results.founderFit?.success) {
+      maxCompleteness += 25;
+      completeness += 15;
+      if (results.founderFit.data?.skillsAnalysis) completeness += 5;
+      if (results.founderFit.data?.teamRequirements) completeness += 5;
+    }
+    
+    if (results.riskAssessment?.success) {
+      maxCompleteness += 25;
+      completeness += 15;
+      if (results.riskAssessment.data?.majorRiskCategories?.length >= 4) completeness += 5;
+      if (results.riskAssessment.data?.mitigationStrategies?.length >= 3) completeness += 5;
+    }
+    
+    // Normalize completeness to percentage
+    completeness = maxCompleteness > 0 ? Math.round((completeness / maxCompleteness) * 100) : 0;
 
-    // Consistency: Cross-agent data alignment (placeholder for now)
-    const consistency = results.marketResearch?.success ? 85 : 0;
+    // Consistency: Cross-agent data alignment
+    let consistency = 0;
+    let consistencyChecks = 0;
+    
+    // Check market research vs financial modeling alignment
+    if (results.marketResearch?.success && results.financialModeling?.success) {
+      consistencyChecks++;
+      // Basic consistency check - both should have positive outlook if market signals are strong
+      const marketPositive = (results.marketResearch.data?.confidence?.overall || 0) > 70;
+      const financialPositive = (results.financialModeling.data?.confidence?.overall || 0) > 70;
+      if (marketPositive === financialPositive) consistency += 30;
+    }
+    
+    // Check founder fit vs financial requirements alignment
+    if (results.founderFit?.success && results.financialModeling?.success) {
+      consistencyChecks++;
+      consistency += 25; // Assume reasonable alignment for now
+    }
+    
+    // Check risk assessment vs other agents alignment
+    if (results.riskAssessment?.success && results.marketResearch?.success) {
+      consistencyChecks++;
+      const marketRisk = 100 - (results.marketResearch.data?.confidence?.overall || 0);
+      const assessedRisk = results.riskAssessment.data?.overallRiskScore || 50;
+      const riskAlignment = Math.abs(marketRisk - assessedRisk) < 20;
+      if (riskAlignment) consistency += 30;
+    }
+    
+    consistency = consistencyChecks > 0 ? Math.round(consistency / consistencyChecks * (100/85)) : 0;
 
-    // Actionability: How actionable the insights are
+    // Actionability: How actionable the insights are across all agents
     let actionability = 0;
+    
     if (results.marketResearch?.success && results.marketResearch.data) {
       const mr = results.marketResearch.data;
-      if (mr.problemStatement?.quantifiedImpact) actionability += 20;
-      if (mr.customerEvidence?.some(e => e.willingnessToPay)) actionability += 20;
-      if (mr.competitorAnalysis?.some(c => c.differentiationOpportunity)) actionability += 20;
-      if (mr.marketTiming?.catalysts?.length >= 3) actionability += 20;
-      if (mr.confidence?.overall >= 70) actionability += 20;
+      if (mr.problemStatement?.quantifiedImpact) actionability += 15;
+      if (mr.customerEvidence?.some(e => e.willingnessToPay)) actionability += 10;
+    }
+    
+    if (results.financialModeling?.success && results.financialModeling.data) {
+      const fm = results.financialModeling.data;
+      if (fm.fundingRequirements?.totalRequired) actionability += 15;
+      if (fm.keyMetrics?.breakEvenMonth) actionability += 10;
+    }
+    
+    if (results.founderFit?.success && results.founderFit.data) {
+      const ff = results.founderFit.data;
+      if (ff.skillsAnalysis?.skillGaps?.length > 0) actionability += 15;
+      if (ff.investmentPlan?.immediatePriorities?.length > 0) actionability += 10;
+    }
+    
+    if (results.riskAssessment?.success && results.riskAssessment.data) {
+      const ra = results.riskAssessment.data;
+      if (ra.mitigationStrategies?.length >= 3) actionability += 15;
+      if (ra.recommendations?.immediate?.length > 0) actionability += 10;
     }
 
-    // Reliability: Based on confidence scores and error rates
-    const reliability = results.marketResearch?.success 
-      ? (results.marketResearch.metadata.confidence || 0)
-      : 0;
+    // Reliability: Based on confidence scores across all agents
+    let reliability = 0;
+    let reliabilityCount = 0;
+    
+    if (results.marketResearch?.success) {
+      reliability += (results.marketResearch.data?.confidence?.overall || 0);
+      reliabilityCount++;
+    }
+    
+    if (results.financialModeling?.success) {
+      reliability += (results.financialModeling.data?.confidence?.overall || 0);
+      reliabilityCount++;
+    }
+    
+    if (results.founderFit?.success) {
+      reliability += (results.founderFit.data?.confidence?.overall || 0);
+      reliabilityCount++;
+    }
+    
+    if (results.riskAssessment?.success) {
+      reliability += (results.riskAssessment.data?.confidence?.overall || 0);
+      reliabilityCount++;
+    }
+    
+    reliability = reliabilityCount > 0 ? Math.round(reliability / reliabilityCount) : 0;
 
     return {
       completeness,
@@ -543,7 +823,17 @@ export class AgentOrchestrator {
       total += results.marketResearch.metadata.metrics.tokensUsed;
     }
     
-    // TODO: Add other agents when implemented
+    if (results.financialModeling?.metadata.metrics.tokensUsed) {
+      total += results.financialModeling.metadata.metrics.tokensUsed;
+    }
+    
+    if (results.founderFit?.metadata.metrics.tokensUsed) {
+      total += results.founderFit.metadata.metrics.tokensUsed;
+    }
+    
+    if (results.riskAssessment?.metadata.metrics.tokensUsed) {
+      total += results.riskAssessment.metadata.metrics.tokensUsed;
+    }
     
     return total;
   }

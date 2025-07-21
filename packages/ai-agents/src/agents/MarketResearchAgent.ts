@@ -228,7 +228,7 @@ export class MarketResearchAgent extends BaseAgent<MarketResearchInput, MarketRe
         });
         externalData = trendData.data;
       } catch (error) {
-        this.logger.warn('Failed to fetch external trend data', error);
+        this.logger.warn('Failed to fetch external trend data', error instanceof Error ? error.message : String(error));
       }
     }
 
@@ -339,7 +339,7 @@ export class MarketResearchAgent extends BaseAgent<MarketResearchInput, MarketRe
         });
         competitorData = companyData.data;
       } catch (error) {
-        this.logger.warn('Failed to fetch competitor data', error);
+        this.logger.warn('Failed to fetch competitor data', error instanceof Error ? error.message : String(error));
       }
     }
 

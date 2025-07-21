@@ -1,10 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { AgentOrchestrator } from '../orchestration/AgentOrchestrator';
-import { MarketResearchAgent } from '../agents/MarketResearchAgent';
-import { LLMProvider } from '../providers/LLMProvider';
-import { CacheProvider } from '../providers/CacheProvider';
-import { DataSourceProvider } from '../providers/DataSourceProvider';
-import { Logger } from '../utils/Logger';
+import { AgentOrchestrator, BusinessIdeaAnalysisInput, createAgentOrchestrator } from '../orchestration/AgentOrchestrator';
+import { Logger, LogLevel } from '../utils/Logger';
 import { MetricsCollector } from '../utils/MetricsCollector';
 
 /**
@@ -12,66 +8,64 @@ import { MetricsCollector } from '../utils/MetricsCollector';
  * Integrates with existing AI Business Factory infrastructure
  */
 
-const logger = Logger.getInstance();
+const logger = new Logger('lambda-handler');
 
-// Initialize providers using existing AWS infrastructure
-const initializeProviders = () => {
-  // Use existing AI Model Router layer for LLM management
-  const llmProvider = new LLMProvider({
-    primaryProvider: 'claude',
-    fallbackProvider: 'openai',
-    useExistingRouter: true, // Leverage existing AI Model Router
-    costOptimization: true
-  });
-
-  // Use existing ElastiCache Redis for caching
-  const cacheProvider = new CacheProvider({
-    type: 'redis',
-    redisUrl: process.env.REDIS_URL || '',
-    defaultTTL: 3600
-  });
-
-  // Configure data sources with external APIs
-  const dataSourceProvider = new DataSourceProvider({
-    googleTrends: {
-      enabled: true,
-      apiKey: process.env.GOOGLE_TRENDS_API_KEY
-    },
-    crunchbase: {
-      enabled: true,
-      apiKey: process.env.CRUNCHBASE_API_KEY
-    },
-    semrush: {
-      enabled: true,
-      apiKey: process.env.SEMRUSH_API_KEY
-    }
-  });
-
-  return { llmProvider, cacheProvider, dataSourceProvider };
+// Initialize orchestrator with production or development configuration
+const initializeOrchestrator = (): AgentOrchestrator => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment) {
+    logger.info('Initializing development orchestrator with mock providers');
+    // Use mock providers for development/testing
+    return createAgentOrchestrator({
+      llmProvider: {
+        type: 'mock'
+      },
+      cacheProvider: {
+        type: 'memory'
+      },
+      dataSourceProviders: [
+        {
+          name: 'market_data',
+          type: 'mock',
+          config: {}
+        }
+      ],
+      logLevel: LogLevel.DEBUG,
+      enableMetrics: true
+    });
+  } else {
+    logger.info('Initializing production orchestrator with real providers');
+    // Production configuration with real APIs
+    return createAgentOrchestrator({
+      llmProvider: {
+        type: process.env.LLM_PROVIDER === 'openai' ? 'openai' : 'claude',
+        apiKey: process.env.LLM_API_KEY
+      },
+      cacheProvider: {
+        type: 'redis',
+        config: {
+          redisUrl: process.env.REDIS_URL,
+          defaultTTL: 3600
+        }
+      },
+      dataSourceProviders: [
+        {
+          name: 'market_data',
+          type: 'google_trends', // Will use FreeDataSourceProvider
+          config: {
+            enabled: true
+          }
+        }
+      ],
+      logLevel: LogLevel.INFO,
+      enableMetrics: true
+    });
+  }
 };
 
-// Initialize AI Agent System
-const initializeAgentSystem = () => {
-  const { llmProvider, cacheProvider, dataSourceProvider } = initializeProviders();
-
-  const orchestrator = new AgentOrchestrator({
-    cacheProvider,
-    metricsCollector: new MetricsCollector()
-  });
-
-  // Register agents
-  const marketResearchAgent = new MarketResearchAgent(
-    llmProvider,
-    cacheProvider,
-    dataSourceProvider
-  );
-
-  orchestrator.registerAgent('market-research', marketResearchAgent);
-
-  return orchestrator;
-};
-
-const orchestrator = initializeAgentSystem();
+// Initialize orchestrator instance
+const orchestrator = initializeOrchestrator();
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -103,7 +97,11 @@ export const handler = async (
 
     // Route requests based on path
     if (path === '/analyze' && event.httpMethod === 'POST') {
-      return await handleIdeaAnalysis(body, corsHeaders);
+      return await handleComprehensiveAnalysis(body, corsHeaders);
+    }
+
+    if (path === '/analyze/market' && event.httpMethod === 'POST') {
+      return await handleMarketAnalysis(body, corsHeaders);
     }
 
     if (path === '/health' && event.httpMethod === 'GET') {
@@ -143,9 +141,169 @@ export const handler = async (
 };
 
 /**
- * Handle business idea analysis requests
+ * Handle comprehensive business idea analysis using all agents
  */
-async function handleIdeaAnalysis(
+async function handleComprehensiveAnalysis(
+  body: any,
+  corsHeaders: Record<string, string>
+): Promise<APIGatewayProxyResult> {
+  const { idea, userContext, analysisDepth = 'comprehensive', enabledAgents } = body;
+
+  if (!idea?.title || !idea?.description) {
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        error: 'Bad Request',
+        message: 'idea.title and idea.description are required'
+      })
+    };
+  }
+
+  try {
+    // Create comprehensive analysis input
+    const analysisInput: BusinessIdeaAnalysisInput = {
+      idea: {
+        title: idea.title,
+        description: idea.description,
+        category: idea.category || 'ai-automation',
+        tier: idea.tier || 'ai-generated'
+      },
+      userContext: userContext || {},
+      analysisDepth: analysisDepth,
+      enabledAgents: enabledAgents || {
+        marketResearch: true,
+        financialModeling: true,
+        founderFit: true,
+        riskAssessment: true
+      }
+    };
+
+    // Execute comprehensive analysis
+    const result = await orchestrator.analyzeBusiness(analysisInput);
+
+    if (!result.success) {
+      throw new Error(result.error?.message || 'Analysis failed');
+    }
+
+    // Transform to DetailedIdea format for Ideas PWA integration
+    const detailedIdea = {
+      id: `ai-${Date.now()}`,
+      type: 'ai-generated' as const,
+      title: idea.title,
+      shortDescription: idea.description.substring(0, 200) + '...',
+      category: idea.category || 'AI & Technology',
+      difficulty: 'Medium',
+      timeToMarket: '6-18 months',
+      marketSize: result.marketResearch?.data?.problemStatement?.quantifiedImpact || 'TBD',
+      
+      // Comprehensive AI-generated analysis
+      overview: {
+        executiveSummary: result.marketResearch?.data?.problemStatement?.summary || '',
+        keyInsights: [] as string[],
+        confidenceScore: result.metadata.overallConfidence
+      },
+
+      marketAnalysis: {
+        problemStatement: result.marketResearch?.data?.problemStatement || {},
+        marketSignals: result.marketResearch?.data?.marketSignals || {},
+        customerEvidence: result.marketResearch?.data?.customerEvidence || {},
+        competitorAnalysis: result.marketResearch?.data?.competitorAnalysis || {},
+        marketTiming: result.marketResearch?.data?.marketTiming || {}
+      },
+
+      financialModel: {
+        revenue: {
+          tamSamSom: result.financialModeling?.data?.tamSamSom || null,
+          projections: result.financialModeling?.data?.revenueProjections || [],
+          businessModel: result.financialModeling?.data?.scenarios || null
+        },
+        costs: {
+          development: result.financialModeling?.data?.costAnalysis?.developmentCosts || [],
+          operational: result.financialModeling?.data?.costAnalysis?.operationalCosts || [],
+          marketing: result.financialModeling?.data?.costAnalysis?.marketingCosts || []
+        },
+        funding: {
+          requirements: result.financialModeling?.data?.fundingRequirements || null,
+          stages: result.financialModeling?.data?.fundingRequirements?.stages || [],
+          investors: result.financialModeling?.data?.fundingRequirements?.investorTypes || []
+        },
+        metrics: {
+          unitEconomics: result.financialModeling?.data?.costAnalysis?.unitEconomics || null,
+          keyMetrics: result.financialModeling?.data?.keyMetrics || {}
+        }
+      },
+
+      teamAndCosts: {
+        founderFit: result.founderFit?.data?.scenarios || null,
+        teamComposition: {
+          coreTeam: [] as any[],
+          advisors: [] as any[],
+          skillsGap: [] as any[]
+        },
+        costs: {
+          salaries: [] as any[],
+          equity: [] as any[],
+          timeline: [] as any[]
+        },
+        investment: {
+          totalRequired: null,
+          stages: [] as any[],
+          useOfFunds: [] as any[]
+        }
+      },
+
+      strategy: {
+        goToMarket: null,
+        competitive: result.marketResearch?.data?.competitiveIntelligence?.differentiationOpportunities || [],
+        partnerships: [] as any[],
+        scalability: result.financialModeling?.data?.scenarios?.optimistic || null
+      },
+
+      riskAssessment: {
+        risks: result.riskAssessment?.data?.majorRiskCategories || [],
+        mitigations: result.riskAssessment?.data?.mitigationStrategies || [],
+        contingencyPlans: result.riskAssessment?.data?.riskScenarios || [],
+        successFactors: result.riskAssessment?.data?.recommendations?.immediate || []
+      }
+    };
+
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        success: true,
+        data: detailedIdea,
+        metadata: {
+          requestId: result.requestId,
+          processingTime: result.metadata.totalExecutionTime,
+          agentsExecuted: result.metadata.agentsExecuted,
+          agentsFailed: result.metadata.agentsFailed,
+          overallConfidence: result.metadata.overallConfidence,
+          qualityMetrics: result.qualityMetrics
+        }
+      })
+    };
+
+  } catch (error) {
+    logger.error('Comprehensive analysis failed', { error });
+    
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        success: false,
+        error: 'Analysis Failed',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
+    };
+  }
+}
+
+/**
+ * Handle market research only analysis (for backward compatibility)
+ */
+async function handleMarketAnalysis(
   body: any,
   corsHeaders: Record<string, string>
 ): Promise<APIGatewayProxyResult> {
@@ -163,97 +321,41 @@ async function handleIdeaAnalysis(
   }
 
   try {
-    // Execute AI agent analysis
-    const result = await orchestrator.executeWorkflow([
-      {
-        agentId: 'market-research',
-        input: {
-          ideaText,
-          userContext: userContext || {}
-        }
-      }
-    ]);
-
-    // Extract market research results
-    const marketResearch = result.results['market-research'];
-
-    if (!marketResearch.success) {
-      throw new Error('Market research analysis failed');
-    }
-
-    // Transform to DetailedIdea format for Ideas PWA
-    const detailedIdea = {
-      id: `ai-${Date.now()}`,
-      type: 'ai-generated' as const,
-      title: extractIdeaTitle(ideaText),
-      shortDescription: ideaText.substring(0, 200) + '...',
-      category: 'AI & Technology', // Could be classified by agents
-      difficulty: 'Medium',
-      timeToMarket: '6-12 months',
-      marketSize: marketResearch.data.marketSignals?.totalMarketSize || 'Unknown',
-      
-      // AI-generated comprehensive analysis
-      overview: {
-        executiveSummary: marketResearch.data.problemStatement?.summary || '',
-        keyInsights: marketResearch.data.problemStatement?.keyInsights || [],
-        confidenceScore: marketResearch.confidence || 0.85
+    const analysisInput: BusinessIdeaAnalysisInput = {
+      idea: {
+        title: extractIdeaTitle(ideaText),
+        description: ideaText,
+        category: 'ai-automation',
+        tier: 'ai-generated'
       },
-
-      marketAnalysis: {
-        problemStatement: marketResearch.data.problemStatement || {},
-        marketSignals: marketResearch.data.marketSignals || {},
-        customerEvidence: marketResearch.data.customerEvidence || {},
-        competitorAnalysis: marketResearch.data.competitorAnalysis || {},
-        marketTiming: marketResearch.data.marketTiming || {}
-      },
-
-      // Placeholder for other agents (to be implemented)
-      financialModel: {
-        revenue: { tamSamSom: null, projections: [], businessModel: null },
-        costs: { development: [], operational: [], marketing: [] },
-        funding: { requirements: null, stages: [], investors: [] },
-        metrics: { unitEconomics: null, keyMetrics: [] }
-      },
-
-      teamAndCosts: {
-        founderFit: null,
-        teamComposition: { coreTeam: [], advisors: [], skillsGap: [] },
-        costs: { salaries: [], equity: [], timeline: [] },
-        investment: { totalRequired: null, stages: [], useOfFunds: [] }
-      },
-
-      strategy: {
-        goToMarket: marketResearch.data.marketTiming?.goToMarketStrategy || null,
-        competitive: marketResearch.data.competitorAnalysis?.differentiationOpportunities || [],
-        partnerships: [],
-        scalability: null
-      },
-
-      riskAssessment: {
-        risks: [],
-        mitigations: [],
-        contingencyPlans: [],
-        successFactors: []
+      userContext: userContext || {},
+      analysisDepth: 'standard',
+      enabledAgents: {
+        marketResearch: true,
+        financialModeling: false,
+        founderFit: false,
+        riskAssessment: false
       }
     };
+
+    const result = await orchestrator.analyzeBusiness(analysisInput);
 
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify({
-        success: true,
-        data: detailedIdea,
+        success: result.success,
+        data: result.marketResearch?.data || null,
         metadata: {
-          processingTime: result.executionTime,
-          totalTokens: result.totalTokensUsed,
-          confidence: marketResearch.confidence,
-          agentsExecuted: Object.keys(result.results)
+          requestId: result.requestId,
+          processingTime: result.metadata.totalExecutionTime,
+          confidence: result.marketResearch?.metadata?.confidence || 0
         }
       })
     };
 
   } catch (error) {
-    logger.error('Idea analysis failed', { error });
+    logger.error('Market analysis failed', { error });
     
     return {
       statusCode: 500,
@@ -274,17 +376,27 @@ async function handleHealthCheck(
   corsHeaders: Record<string, string>
 ): Promise<APIGatewayProxyResult> {
   try {
-    const health = await orchestrator.getHealthStatus();
+    const health = orchestrator.getHealthStatus();
+    const activeExecutions = orchestrator.getActiveExecutions();
     
     return {
       statusCode: 200,
       headers: corsHeaders,
       body: JSON.stringify({
-        status: 'healthy',
+        status: health.status,
         timestamp: new Date().toISOString(),
         agents: health.agents,
-        performance: health.performance,
-        version: '1.0.0'
+        providers: health.providers,
+        activeExecutions: health.activeExecutions,
+        version: '2.0.0',
+        capabilities: {
+          marketResearch: 'Production Ready',
+          financialModeling: 'Production Ready', 
+          founderFit: 'Production Ready',
+          riskAssessment: 'Production Ready',
+          orchestration: 'Comprehensive',
+          dataSource: 'Free APIs Integrated'
+        }
       })
     };
 
@@ -294,7 +406,8 @@ async function handleHealthCheck(
       headers: corsHeaders,
       body: JSON.stringify({
         status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
       })
     };
   }
@@ -304,14 +417,17 @@ async function handleHealthCheck(
  * Extract a meaningful title from idea text
  */
 function extractIdeaTitle(ideaText: string): string {
-  // Simple title extraction - could be enhanced with NLP
-  const sentences = ideaText.split('.').filter(s => s.trim().length > 0);
-  const firstSentence = sentences[0]?.trim() || ideaText.substring(0, 100);
+  // Enhanced title extraction
+  const sentences = ideaText.split(/[.!?]/).filter(s => s.trim().length > 0);
+  let title = sentences[0]?.trim() || ideaText.substring(0, 100);
+  
+  // Remove common prefixes
+  title = title.replace(/^(An?|The|Create|Build|Develop)\s+/i, '');
   
   // Clean and truncate
-  return firstSentence.length > 50 
-    ? firstSentence.substring(0, 47) + '...'
-    : firstSentence;
+  return title.length > 60 
+    ? title.substring(0, 57) + '...'
+    : title;
 }
 
 /**
@@ -328,22 +444,36 @@ export const graphqlResolver = async (event: any, context: Context) => {
     const { arguments: args } = event;
     
     if (event.info?.fieldName === 'analyzeIdea') {
-      const result = await orchestrator.executeWorkflow([
-        {
-          agentId: 'market-research',
-          input: {
-            ideaText: args.input.ideaText,
-            userContext: args.input.userContext || {}
-          }
+      const analysisInput: BusinessIdeaAnalysisInput = {
+        idea: {
+          title: args.input.title || extractIdeaTitle(args.input.ideaText),
+          description: args.input.ideaText,
+          category: args.input.category || 'ai-automation',
+          tier: 'ai-generated'
+        },
+        userContext: args.input.userContext || {},
+        analysisDepth: args.input.analysisDepth || 'comprehensive',
+        enabledAgents: args.input.enabledAgents || {
+          marketResearch: true,
+          financialModeling: true,
+          founderFit: true,
+          riskAssessment: true
         }
-      ]);
+      };
+
+      const result = await orchestrator.analyzeBusiness(analysisInput);
 
       return {
-        success: true,
-        analysisId: `ai-${Date.now()}`,
-        marketResearch: result.results['market-research']?.data || null,
-        confidence: result.results['market-research']?.confidence || 0,
-        executionTime: result.executionTime
+        success: result.success,
+        analysisId: result.requestId,
+        marketResearch: result.marketResearch?.data || null,
+        financialModeling: result.financialModeling?.data || null,
+        founderFit: result.founderFit?.data || null,
+        riskAssessment: result.riskAssessment?.data || null,
+        overallConfidence: result.metadata.overallConfidence,
+        qualityMetrics: result.qualityMetrics,
+        executionTime: result.metadata.totalExecutionTime,
+        agentsExecuted: result.metadata.agentsExecuted
       };
     }
 

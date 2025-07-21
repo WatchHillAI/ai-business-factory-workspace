@@ -16,7 +16,7 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     
-    <!-- Tailwind CSS with dark mode support -->
+    <!-- Temporary: Restore TailwindCSS CDN for working layout -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // Enhanced Tailwind config with dark mode colors
@@ -48,18 +48,39 @@
                     }
                 }
             }
-        }
-        
+        };
+    </script>
+    
+    <script>
         // Initialize dark mode on page load
         (function() {
             const stored = localStorage.getItem('idea-cards-theme');
             const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = stored || (systemPrefersDark ? 'dark' : 'light');
             
-            document.documentElement.classList.remove('light', 'dark');
-            document.documentElement.classList.add(theme);
-            document.body.classList.remove('light', 'dark');
-            document.body.classList.add(theme);
+            // Safely update document element
+            if (document.documentElement) {
+                document.documentElement.classList.remove('light', 'dark');
+                document.documentElement.classList.add(theme);
+            }
+            
+            // Wait for body to be available or update when DOM loads
+            function updateBody() {
+                if (document.body) {
+                    document.body.classList.remove('light', 'dark');
+                    document.body.classList.add(theme);
+                } else {
+                    // If body not ready, try again after DOM loads
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (document.body) {
+                            document.body.classList.remove('light', 'dark');
+                            document.body.classList.add(theme);
+                        }
+                    });
+                }
+            }
+            
+            updateBody();
         })();
     </script>
     

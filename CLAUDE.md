@@ -82,16 +82,28 @@ pkill -f "vite" || true; pkill -f "nx serve" || true
 sleep 2
 
 # 3. Verify ports are free
-lsof -i :3001 :3002 || echo "Ports are free"
+lsof -i :3001 :3002 2>/dev/null || echo "Ports are free"
 
-# 4. Start fresh
-npm run dev
+# 4. Start fresh (VERIFIED WORKING SEQUENCE)
+npm run dev 2>&1 &
 
 # 5. Verify servers are running
-sleep 3
+sleep 5
 curl -I http://localhost:3001/ && echo "BMC PWA: OK"
 curl -I http://localhost:3002/ && echo "Ideas PWA: OK"
 ```
+
+### 🎯 **VERIFIED WORKING DEV SERVER SEQUENCE**:
+This command sequence has been tested and confirmed to reliably start both PWAs:
+```bash
+pkill -f "vite" || true; pkill -f "nx serve" || true
+sleep 2 && lsof -i :3001 :3002 2>/dev/null || echo "Ports are free" 
+npm run dev 2>&1 &
+```
+- ✅ Kills any existing processes completely
+- ✅ Waits for proper cleanup 
+- ✅ Verifies ports are available (with proper error handling)
+- ✅ Starts both servers in background with output capture
 
 ### 🔧 Troubleshooting Server Issues
 
@@ -254,6 +266,14 @@ GitHub Actions automatically handles:
 2. Uploading to S3 with path-based separation
 3. Invalidating CloudFront caches
 4. Running health checks
+
+## 🚨 IMPORTANT: Token Usage Economy
+
+**ALWAYS be frugal with token consumption!** The project's success depends on efficient resource usage:
+- Keep responses concise and focused
+- Avoid unnecessary file generation or verbose explanations
+- Use simple, direct solutions over complex ones
+- Summarize rather than elaborate when possible
 
 ## Testing Checklist
 

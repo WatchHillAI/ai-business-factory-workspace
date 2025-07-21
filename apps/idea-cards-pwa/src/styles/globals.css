@@ -3,7 +3,10 @@
 /* Import dark theme */
 @import './theme.css';
 
-/* Tailwind CSS loaded via CDN in index.html */
+/* Temporarily disabled PostCSS TailwindCSS to fix layout issues */
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
 
 /* Global dark mode defaults */
 body {

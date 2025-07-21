@@ -1,0 +1,5 @@
+{
+  "path": "/analyze",
+  "httpMethod": "POST",
+  "body": "{\"idea\":{\"title\":\"AI-Powered Fitness Coach\",\"description\":\"An AI-powered fitness app that creates personalized workout plans based on user goals, available equipment, and real-time biometric feedback.\",\"category\":\"healthtech\",\"tier\":\"ai-generated\"},\"analysisDepth\":\"standard\",\"enabledAgents\":{\"marketResearch\":true,\"financialModeling\":false,\"founderFit\":false,\"riskAssessment\":false}}"
+}

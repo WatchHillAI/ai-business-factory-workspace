@@ -46,8 +46,11 @@ const AppContent: React.FC = () => {
   };
 
   const handleViewIdea = (ideaId: string) => {
+    console.log('handleViewIdea called with:', ideaId);
+    console.log('Current state before update:', { currentView, selectedIdeaId });
     setSelectedIdeaId(ideaId);
     setCurrentView('detail');
+    console.log('State update calls completed');
   };
 
   const handleBackToList = () => {
@@ -66,7 +69,14 @@ const AppContent: React.FC = () => {
   };
 
   // Show detail view if an idea is selected
+  console.log('Render check:', { 
+    currentView: currentView, 
+    selectedIdeaId: selectedIdeaId, 
+    shouldShowDetail: currentView === 'detail' && selectedIdeaId 
+  });
+  
   if (currentView === 'detail' && selectedIdeaId) {
+    console.log('Rendering detail view for:', selectedIdeaId);
     // For demo, always show the sample detailed idea
     return (
       <div className={`min-h-screen transition-colors duration-200 ${

@@ -1,0 +1,1 @@
+{"statusCode":200,"headers":{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"},"body":"{\"message\":\"AI Agent Orchestrator is deployed!\",\"version\":\"2.0.0\",\"capabilities\":[\"Market Research Agent\",\"Financial Modeling Agent\",\"Founder Fit Agent\",\"Risk Assessment Agent\"],\"status\":\"ready\",\"path\":\"/health\",\"method\":\"GET\"}"}
