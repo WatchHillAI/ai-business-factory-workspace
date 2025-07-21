@@ -4,23 +4,38 @@ A shared monorepo workspace for AI-powered Progressive Web Applications that hel
 
 ## 🚀 Applications
 
-### 📱 **Ideas PWA** - Business Opportunity Discovery
+### 📱 **Ideas PWA** - AI-Powered Business Intelligence Platform
 **URL**: https://dc275i5wdcepx.cloudfront.net
 
-Modern dark-mode PWA for discovering curated business opportunities with AI-powered personalization.
+Revolutionary PWA that transforms simple business ideas into comprehensive, actionable intelligence using advanced AI agents.
 
-**Features:**
+**🤖 AI Agent System:**
+- **Market Research Agent**: Analyzes problems, signals, customer evidence, competitors, and timing
+- **Financial Modeling Agent**: TAM/SAM/SOM calculations with revenue projections *(coming soon)*
+- **Founder Fit Agent**: Skills analysis, cost modeling, and investment requirements *(coming soon)*
+- **Risk Assessment Agent**: Multi-dimensional risk analysis with mitigation strategies *(coming soon)*
+
+**📊 Business Intelligence Features:**
+- **Problem Validation**: Quantified market problems with impact analysis
+- **Market Signals**: Real-time trends from Google, funding, regulatory, and sentiment data
+- **Customer Evidence**: Realistic customer profiles with willingness-to-pay analysis
+- **Competitive Intelligence**: Detailed competitor analysis with differentiation opportunities
+- **Market Timing Assessment**: Perfect timing evaluation with specific catalysts
+- **Confidence Scoring**: Multi-dimensional confidence analysis across all data points
+
+**🎨 Modern UI Features:**
 - 🌙 **Dark mode by default** with intelligent theme toggle
 - ♿ **WCAG 2.2 AA compliant** with excellent accessibility
-- 🎨 **Modern UI** with smooth animations and hover effects
+- 📋 **6-Tab Detail View**: Overview, Market Analysis, Financial Model, Team & Costs, Strategy, Risk Assessment
 - 📊 **Three card types**: Public, Exclusive, and AI-Generated ideas
 - 📱 **PWA features**: Installable, offline-capable, theme-aware
 
 **Tech Stack:**
-- React 19 + TypeScript
-- Tailwind CSS 4 with custom theme system
-- Vite 6 for fast development
-- Advanced accessibility features
+- React 19 + TypeScript for robust UI
+- AI Agent Framework with Claude 3.5 Sonnet & GPT-4
+- Real-time data from Google Trends, Crunchbase, SEMrush
+- Redis caching with performance monitoring
+- Comprehensive quality assurance and validation
 
 ### 🎯 **BMC PWA** - Business Model Canvas
 **URL**: https://d1u91xxklexz0v.cloudfront.net
@@ -35,17 +50,47 @@ Interactive Business Model Canvas tool with AI assistance and collaborative feat
 
 ## 🏗️ Architecture
 
+### **AI Agent Framework**
+```mermaid
+graph TB
+    UI[Ideas PWA UI] --> API[Agent API Gateway]
+    API --> ORG[Agent Orchestrator]
+    
+    ORG --> MR[Market Research Agent]
+    ORG --> FM[Financial Modeling Agent]
+    ORG --> FF[Founder Fit Agent] 
+    ORG --> RA[Risk Assessment Agent]
+    
+    MR --> LLM[LLM Providers<br/>Claude 3.5 / GPT-4]
+    FM --> LLM
+    FF --> LLM
+    RA --> LLM
+    
+    MR --> DATA[Data Sources<br/>Google Trends<br/>Crunchbase<br/>SEMrush]
+    FM --> DATA
+    FF --> DATA
+    RA --> DATA
+    
+    ORG --> CACHE[Redis Cache]
+    ORG --> METRICS[Metrics & Monitoring<br/>Performance Tracking<br/>Quality Assurance]
+    
+    CACHE --> UI
+    METRICS --> HEALTH[Health Dashboard]
+```
+
 ### **Shared Workspace Benefits**
-- **Code sharing** between applications
-- **Consistent UI components** in shared library
-- **Unified build and deployment** pipeline
-- **Type safety** across all applications
+- **AI-powered intelligence** generation across applications
+- **Consistent UI components** with agent-generated data integration
+- **Unified build and deployment** pipeline with AI infrastructure
+- **Type safety** across all applications and agent interfaces
+- **Quality assurance** with automated confidence scoring
 
 ### **Infrastructure**
-- **AWS S3 + CloudFront** for global distribution
-- **Shared bucket** with path-based separation (`/bmc/`, `/ideas/`)
-- **Origin Access Control** for security
-- **Automated CI/CD** with GitHub Actions
+- **AWS S3 + CloudFront** for global PWA distribution
+- **AI Agent Infrastructure** with orchestration and caching
+- **Real-time data sources** for market intelligence
+- **Performance monitoring** with health checks and metrics
+- **Automated CI/CD** with comprehensive testing
 
 ## 🛠️ Development
 
@@ -90,12 +135,14 @@ npm run build:ui-components
 ai-business-factory-workspace/
 ├── apps/
 │   ├── bmc-pwa/              # Business Model Canvas PWA
-│   └── idea-cards-pwa/       # Ideas Discovery PWA
+│   └── idea-cards-pwa/       # Ideas Discovery PWA with AI agents
 ├── packages/
-│   └── ui-components/        # Shared UI component library
+│   ├── ui-components/        # Shared UI component library
+│   └── ai-agents/            # AI agent framework and implementations
 ├── dist/                     # Build outputs
 ├── .github/workflows/        # CI/CD pipelines
-└── docs/                     # Documentation
+├── docs/                     # Documentation and ADRs
+└── infrastructure/           # Terraform and deployment configs
 ```
 
 ## 🎨 Design System
@@ -164,20 +211,39 @@ npm run lint
 
 # Type checking
 npm run typecheck
+
+# Test AI agents
+cd packages/ai-agents && node test-run.js
 ```
+
+### **AI Agent Testing**
+- **Mock provider testing** for development
+- **Quality assurance validation** with confidence scoring
+- **Performance benchmarks** for response time and token usage
+- **Integration testing** with Ideas PWA components
 
 ### **Accessibility Testing**
 - **Manual testing** with screen readers
 - **Automated testing** with axe-core
-- **Contrast validation** for all color combinations
+- **Contrast validation** for all color combinations (18.3:1 ratio achieved)
 - **Keyboard navigation** verification
 
 ## 📚 Documentation
 
+### **Infrastructure & Deployment**
 - [PWA Deployment Guide](../ai-business-factory-infrastructure/docs/PWA-DEPLOYMENT-GUIDE.md)
+- [AI Agent System Test Report](./AI-AGENT-SYSTEM-TEST-REPORT.md)
+- [Component Library](./packages/ui-components/README.md)
+
+### **AI Agent Documentation**
+- [AI Agent Architecture](./docs/AI-AGENT-ARCHITECTURE.md) - High-level system design
+- [Implementation Specifications](./docs/AGENT-IMPLEMENTATION-SPECS.md) - Technical details
+- [Business Intelligence Strategy](./docs/IDEA-DETAIL-STRATEGY.md) - Requirements analysis
+
+### **Application Documentation**
 - [Ideas PWA README](./apps/idea-cards-pwa/README.md)
 - [Accessibility Report](./apps/idea-cards-pwa/docs/ACCESSIBILITY-REPORT.md)
-- [Component Library](./packages/ui-components/README.md)
+- [Development Guide](./CLAUDE.md) - Comprehensive developer documentation
 
 ## 🤝 Contributing
 
@@ -195,17 +261,23 @@ npm run typecheck
 
 ## 🚧 Roadmap
 
-### **Q3 2025**
-- [ ] Backend API integration
-- [ ] User authentication system
-- [ ] Real-time collaboration features
-- [ ] Advanced AI recommendations
+### **Q3 2025** - AI Agent Expansion
+- [x] **Market Research Agent** - Complete business intelligence analysis
+- [ ] **Financial Modeling Agent** - TAM/SAM/SOM calculations and revenue projections
+- [ ] **Founder Fit Agent** - Skills analysis and investment requirements
+- [ ] **Risk Assessment Agent** - Multi-dimensional risk analysis and mitigation
 
-### **Q4 2025**
-- [ ] Multi-tenant architecture
-- [ ] Enterprise features
-- [ ] Advanced analytics dashboard
-- [ ] White-label customization
+### **Q4 2025** - Production Intelligence Platform
+- [ ] **Real LLM Integration** - Claude 3.5 Sonnet and GPT-4 production deployment
+- [ ] **Live Data Sources** - Google Trends, Crunchbase, SEMrush API integration
+- [ ] **User Authentication** - Personalized analysis and saved ideas
+- [ ] **API Endpoints** - RESTful services for agent orchestration
+
+### **2026** - Enterprise Platform
+- [ ] **Multi-tenant Architecture** - White-label business intelligence platform
+- [ ] **Advanced Analytics** - Trend analysis and predictive insights
+- [ ] **Collaboration Features** - Team-based idea development and sharing
+- [ ] **Custom Agent Training** - Industry-specific intelligence models
 
 ---
 

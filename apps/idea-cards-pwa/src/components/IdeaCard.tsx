@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Badge, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@ai-business-factory/ui-components';
+import { useTheme } from '../hooks/useTheme';
 import { IdeaCardProps } from '../types';
 
 export const IdeaCard: React.FC<IdeaCardProps> = ({
@@ -11,40 +11,62 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
   onAIGenerate,
   showProgressiveDisclosure,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const renderCardHeader = () => {
     let titlePrefix = '';
-    let titleClass = 'text-gray-900';
+    let titleClass = '';
     
     if (idea.tier === 'exclusive') {
       titlePrefix = '👑 ';
-      titleClass = 'text-purple-900';
+      titleClass = isDark ? 'dark-exclusive-primary' : 'text-purple-900';
     } else if (idea.tier === 'ai-generated') {
       titlePrefix = '✨ ';
-      titleClass = 'text-yellow-900';
+      titleClass = isDark ? 'dark-ai-primary' : 'text-amber-900';
     } else if (idea.icon) {
       titlePrefix = `${idea.icon} `;
-      titleClass = 'text-blue-900';
+      titleClass = isDark ? 'dark-public-primary' : 'text-blue-900';
+    } else {
+      titleClass = isDark ? 'dark-text-primary' : 'text-gray-900';
     }
     
     return (
-      <CardHeader>
+      <div className="p-6 pb-0">
         <div className="flex items-center justify-between">
-          <CardTitle className={titleClass}>
+          <h3 className={`text-lg font-semibold transition-colors duration-200 ${titleClass}`}>
             {titlePrefix}{idea.title}
-          </CardTitle>
+          </h3>
           {renderTierBadge()}
         </div>
-      </CardHeader>
+      </div>
     );
   };
 
   const renderTierBadge = () => {
     if (idea.tier === 'exclusive') {
-      return <Badge variant="premium">⭐ Premium</Badge>;
+      return (
+        <span className={`px-2 py-1 text-xs font-medium rounded-full transition-colors duration-200 ${
+          isDark ? 'dark-badge-premium' : 'bg-purple-100 text-purple-800'
+        }`}>
+          ⭐ Premium
+        </span>
+      );
     } else if (idea.tier === 'ai-generated') {
-      return <Badge variant="ai-generated">🤖 AI Generated</Badge>;
+      return (
+        <span className={`px-2 py-1 text-xs font-medium rounded-full transition-colors duration-200 ${
+          isDark ? 'dark-badge-ai' : 'bg-amber-100 text-amber-800'
+        }`}>
+          🤖 AI Generated
+        </span>
+      );
     } else if (idea.socialProof.trending) {
-      return <Badge variant="trending">🔥 Trending</Badge>;
+      return (
+        <span className={`px-2 py-1 text-xs font-medium rounded-full transition-colors duration-200 ${
+          isDark ? 'dark-badge-trending' : 'bg-red-100 text-red-800'
+        }`}>
+          🔥 Trending
+        </span>
+      );
     }
     return null;
   };
@@ -52,28 +74,52 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
   const renderMetrics = () => (
     <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
       <div className="flex items-center gap-1">
-        <span className="text-gray-500">🎯</span>
-        <span className="font-medium">{idea.metrics.marketSize}</span>
+        <span className={`transition-colors duration-200 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>🎯</span>
+        <span className={`font-medium transition-colors duration-200 ${
+          isDark ? 'dark-text-primary' : 'text-gray-900'
+        }`}>{idea.metrics.marketSize}</span>
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-gray-500">💻</span>
-        <span className="font-medium">{idea.metrics.techLevel}</span>
+        <span className={`transition-colors duration-200 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>💻</span>
+        <span className={`font-medium transition-colors duration-200 ${
+          isDark ? 'dark-text-primary' : 'text-gray-900'
+        }`}>{idea.metrics.techLevel}</span>
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-gray-500">⏰</span>
-        <span className="font-medium">{idea.metrics.timeToLaunch}</span>
+        <span className={`transition-colors duration-200 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>⏰</span>
+        <span className={`font-medium transition-colors duration-200 ${
+          isDark ? 'dark-text-primary' : 'text-gray-900'
+        }`}>{idea.metrics.timeToLaunch}</span>
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-gray-500">💰</span>
-        <span className="font-medium">{idea.metrics.startupCost}</span>
+        <span className={`transition-colors duration-200 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>💰</span>
+        <span className={`font-medium transition-colors duration-200 ${
+          isDark ? 'dark-text-primary' : 'text-gray-900'
+        }`}>{idea.metrics.startupCost}</span>
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-gray-500">🏢</span>
-        <span className="font-medium">{idea.metrics.targetMarket}</span>
+        <span className={`transition-colors duration-200 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>🏢</span>
+        <span className={`font-medium transition-colors duration-200 ${
+          isDark ? 'dark-text-primary' : 'text-gray-900'
+        }`}>{idea.metrics.targetMarket}</span>
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-gray-500">📈</span>
-        <span className="font-medium text-green-600">
+        <span className={`transition-colors duration-200 ${
+          isDark ? 'text-gray-400' : 'text-gray-500'
+        }`}>📈</span>
+        <span className={`font-medium transition-colors duration-200 ${
+          isDark ? 'text-green-400' : 'text-green-600'
+        }`}>
           {idea.metrics.growthRate || idea.metrics.successProbability}
         </span>
       </div>
@@ -93,16 +139,24 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <i className="fas fa-heart text-red-500"></i>
-                <span className="font-medium text-blue-900">
+                <span className={`font-medium transition-colors duration-200 ${
+                  isDark ? 'dark-public-primary' : 'text-blue-900'
+                }`}>
                   {saveText} entrepreneurs saved this idea
                 </span>
               </div>
               {idea.socialProof.trending && (
-                <Badge variant="trending">🔥 Trending</Badge>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full transition-colors duration-200 ${
+                  isDark ? 'dark-badge-trending' : 'bg-red-100 text-red-800'
+                }`}>
+                  🔥 Trending
+                </span>
               )}
             </div>
             {idea.socialProof.tags && (
-              <div className="text-xs text-blue-700 mt-1">
+              <div className={`text-xs mt-1 transition-colors duration-200 ${
+                isDark ? 'text-blue-300' : 'text-blue-700'
+              }`}>
                 {idea.socialProof.tags.join(' • ')}
               </div>
             )}
@@ -135,11 +189,17 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <i className="fas fa-lock text-purple-600"></i>
-                <span className="font-medium text-purple-900">
+                <span className={`font-medium transition-colors duration-200 ${
+                  isDark ? 'dark-exclusive-primary' : 'text-purple-900'
+                }`}>
                   {remaining} of {idea.exclusivity.totalSlots} exclusive slots remaining
                 </span>
               </div>
-              <Badge variant="premium">⭐ Premium</Badge>
+              <span className={`px-2 py-1 text-xs font-medium rounded-full transition-colors duration-200 ${
+                isDark ? 'dark-badge-premium' : 'bg-purple-100 text-purple-800'
+              }`}>
+                ⭐ Premium
+              </span>
             </div>
             <div className="w-full bg-purple-200 rounded-full h-2">
               <div 
@@ -147,7 +207,9 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
                 style={{width: `${progressPercent}%`}}
               />
             </div>
-            <div className="text-xs text-purple-700 mt-2">
+            <div className={`text-xs mt-2 transition-colors duration-200 ${
+              isDark ? 'text-purple-300' : 'text-purple-700'
+            }`}>
               🚀 First-mover advantage • Enhanced research included
             </div>
           </div>
@@ -157,9 +219,13 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-l-4 border-purple-400 p-3 rounded-r-lg mb-4">
             <div className="flex items-center gap-2 mb-2">
               <i className="fas fa-star text-purple-600"></i>
-              <span className="font-medium text-purple-900">Enhanced research available</span>
+              <span className={`font-medium transition-colors duration-200 ${
+                isDark ? 'dark-exclusive-primary' : 'text-purple-900'
+              }`}>Enhanced research available</span>
             </div>
-            <div className="text-sm text-purple-700">
+            <div className={`text-sm transition-colors duration-200 ${
+              isDark ? 'text-purple-300' : 'text-purple-700'
+            }`}>
               Additional market validation and competitive analysis
             </div>
           </div>
@@ -170,7 +236,9 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg mb-4">
           <div className="flex items-center gap-2 mb-2">
             <i className="fas fa-magic text-yellow-600"></i>
-            <span className="font-medium text-yellow-900">
+            <span className={`font-medium transition-colors duration-200 ${
+              isDark ? 'dark-ai-primary' : 'text-amber-900'
+            }`}>
               Personalized based on your skills & interests
             </span>
           </div>
@@ -189,97 +257,138 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
   const renderActions = () => {
     if (idea.tier === 'public') {
       return (
-        <CardFooter>
-          <Button 
-            variant={isSaved ? "save-active" : "save"} 
-            className="flex-1 mr-2"
-            onClick={() => onSave(idea.id)}
-          >
-            <i className={`fas fa-heart mr-2 ${isSaved ? 'text-red-500' : ''}`}></i>
-            {isSaved ? 'Saved' : 'Save'}
-          </Button>
-          <Button 
-            variant="public" 
-            className="flex-1"
-            onClick={() => onView(idea.id)}
-          >
-            <i className="fas fa-eye mr-2"></i>Details
-          </Button>
-        </CardFooter>
+        <div className="p-6 pt-0">
+          <div className="flex gap-2">
+            <button 
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                isSaved
+                  ? isDark 
+                    ? 'bg-red-600 text-white hover:bg-red-700 dark-focus-visible'
+                    : 'bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500'
+                  : isDark
+                    ? 'dark-btn-secondary dark-hover dark-focus-visible'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-blue-500'
+              }`}
+              onClick={() => onSave(idea.id)}
+            >
+              <i className={`fas fa-heart mr-2 ${isSaved ? 'text-red-100' : ''}`}></i>
+              {isSaved ? 'Saved' : 'Save'}
+            </button>
+            <button 
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                isDark 
+                  ? 'dark-btn-primary dark-focus-visible'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500'
+              }`}
+              onClick={() => onView(idea.id)}
+            >
+              <i className="fas fa-eye mr-2"></i>Details
+            </button>
+          </div>
+        </div>
       );
     } else if (idea.tier === 'exclusive') {
       if (showProgressiveDisclosure) {
         return (
-          <CardFooter>
+          <div className="p-6 pt-0">
             <div className="w-full space-y-3">
-              <Button 
-                variant="exclusive" 
-                className="w-full"
+              <button 
+                className={`w-full px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  isDark 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 dark-focus-visible'
+                    : 'bg-purple-600 text-white hover:bg-purple-700 focus:ring-2 focus:ring-purple-500'
+                }`}
                 onClick={() => onExclusiveClick(idea.id)}
               >
                 <i className="fas fa-unlock mr-2"></i>
                 Claim Exclusive Access - {idea.exclusivity?.price}
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full"
+              </button>
+              <button 
+                className={`w-full px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                  isDark
+                    ? 'dark-btn-secondary dark-hover dark-focus-visible border-purple-600'
+                    : 'bg-white border-purple-200 text-purple-600 hover:bg-purple-50 focus:ring-2 focus:ring-purple-500'
+                }`}
                 onClick={() => onView(idea.id)}
               >
                 <i className="fas fa-eye mr-2"></i>Preview Benefits
-              </Button>
+              </button>
             </div>
-          </CardFooter>
+          </div>
         );
       } else {
         return (
-          <CardFooter>
-            <Button 
-              variant="outline" 
-              className="w-full"
+          <div className="p-6 pt-0">
+            <button 
+              className={`w-full px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                isDark
+                  ? 'dark-btn-secondary dark-hover dark-focus-visible border-purple-600'
+                  : 'bg-white border-purple-200 text-purple-600 hover:bg-purple-50 focus:ring-2 focus:ring-purple-500'
+              }`}
               onClick={() => onView(idea.id)}
             >
               <i className="fas fa-eye mr-2"></i>View Enhanced Research
-            </Button>
-          </CardFooter>
+            </button>
+          </div>
         );
       }
     } else if (idea.tier === 'ai-generated') {
       return (
-        <CardFooter>
+        <div className="p-6 pt-0">
           <div className="w-full flex gap-3">
-            <Button 
-              variant="ai-generated" 
-              className="flex-1"
+            <button 
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                isDark 
+                  ? 'bg-amber-600 text-white hover:bg-amber-700 dark-focus-visible'
+                  : 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-2 focus:ring-amber-500'
+              }`}
               onClick={() => onAIGenerate(idea.id)}
             >
               <i className="fas fa-star mr-2"></i>Develop This Idea
-            </Button>
-            <Button 
-              variant="outline" 
-              className="flex-1"
+            </button>
+            <button 
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                isDark
+                  ? 'dark-btn-secondary dark-hover dark-focus-visible border-amber-600'
+                  : 'bg-white border-amber-200 text-amber-600 hover:bg-amber-50 focus:ring-2 focus:ring-amber-500'
+              }`}
               onClick={() => onAIGenerate(idea.id)}
             >
               <i className="fas fa-sync mr-2"></i>Generate Alternative
-            </Button>
+            </button>
           </div>
-        </CardFooter>
+        </div>
       );
     }
     
     return null;
   };
 
+  const getCardStyles = () => {
+    const baseStyles = "h-full rounded-lg border transition-all duration-200 shadow-sm hover:shadow-md";
+    
+    if (idea.tier === 'exclusive') {
+      return `${baseStyles} ${isDark ? 'dark-card-exclusive' : 'bg-white border-purple-200'}`;
+    } else if (idea.tier === 'ai-generated') {
+      return `${baseStyles} ${isDark ? 'dark-card-ai' : 'bg-white border-amber-200'}`;
+    } else {
+      return `${baseStyles} ${isDark ? 'dark-card-public' : 'bg-white border-gray-200'}`;
+    }
+  };
+
   return (
-    <Card variant={idea.tier} className="h-full">
+    <div className={getCardStyles()}>
       {renderCardHeader()}
-      <CardContent>
-        <CardDescription className="mb-4">
+      <div className="p-6">
+        <p className={`mb-4 transition-colors duration-200 ${
+          isDark ? 'dark-text-secondary' : 'text-gray-600'
+        }`}>
           {idea.description}
-        </CardDescription>
+        </p>
         {renderMetrics()}
         {renderSocialProof()}
-      </CardContent>
+      </div>
       {renderActions()}
-    </Card>
+    </div>
   );
 };
