@@ -18,7 +18,8 @@
     "mongodb": "^6.3.0",
     "@anthropic-ai/sdk": "^0.17.0",
     "openai": "^4.0.0",
-    "@google-ai/generativelanguage": "^2.5.0"
+    "@google-ai/generativelanguage": "^2.5.0",
+    "google-trends-api": "^4.9.2"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
