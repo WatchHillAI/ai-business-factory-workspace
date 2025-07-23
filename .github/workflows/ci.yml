@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [bmc-pwa, idea-cards-pwa]
+        app: [bmc-pwa, ideas-pwa]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

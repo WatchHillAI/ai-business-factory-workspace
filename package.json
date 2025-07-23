@@ -10,10 +10,10 @@
   "scripts": {
     "dev": "nx run-many --target=serve --all --parallel",
     "dev:bmc": "nx serve bmc-pwa",
-    "dev:ideas": "nx serve idea-cards-pwa",
+    "dev:ideas": "nx serve ideas-pwa",
     "build": "nx run-many --target=build --all",
     "build:bmc-pwa": "nx build bmc-pwa",
-    "build:idea-cards-pwa": "nx build idea-cards-pwa",
+    "build:ideas-pwa": "nx build ideas-pwa",
     "build:ui-components": "nx build ui-components",
     "test": "nx run-many --target=test --all",
     "lint": "nx run-many --target=lint --all",
@@ -21,7 +21,7 @@
     "clean": "nx reset && rm -rf dist/ && rm -rf .nx/",
     "preview": "nx run-many --target=preview --all",
     "preview:bmc": "nx preview bmc-pwa",
-    "preview:ideas": "nx preview idea-cards-pwa"
+    "preview:ideas": "nx preview ideas-pwa"
   },
   "keywords": [
     "pwa",

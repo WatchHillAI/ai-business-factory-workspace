@@ -1,7 +1,7 @@
 {
-  "name": "idea-cards-pwa",
-  "root": "apps/idea-cards-pwa",
-  "sourceRoot": "apps/idea-cards-pwa/src",
+  "name": "ideas-pwa",
+  "root": "domains/idea-generation/apps/ideas-pwa",
+  "sourceRoot": "domains/idea-generation/apps/ideas-pwa/src",
   "projectType": "application",
   "targets": {
     "build": {
@@ -9,7 +9,7 @@
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
-        "outputPath": "dist/apps/idea-cards-pwa"
+        "outputPath": "dist/apps/ideas-pwa"
       },
       "configurations": {
         "development": {
@@ -28,7 +28,7 @@
       },
       "configurations": {
         "development": {
-          "buildTarget": "idea-cards-pwa:build:development",
+          "buildTarget": "ideas-pwa:build:development",
           "hmr": true
         }
       }
@@ -37,7 +37,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "apps/idea-cards-pwa/jest.config.ts",
+        "jestConfig": "domains/idea-generation/apps/ideas-pwa/jest.config.ts",
         "passWithNoTests": true
       }
     }

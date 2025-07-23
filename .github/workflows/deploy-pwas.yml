@@ -4,15 +4,15 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'apps/bmc-pwa/**'
-      - 'apps/idea-cards-pwa/**'
+      - 'domains/idea-generation/apps/bmc-pwa/**'
+      - 'domains/idea-generation/apps/ideas-pwa/**'
       - 'package.json'
       - 'nx.json'
   pull_request:
     branches: [ main ]
     paths:
-      - 'apps/bmc-pwa/**'
-      - 'apps/idea-cards-pwa/**'
+      - 'domains/idea-generation/apps/bmc-pwa/**'
+      - 'domains/idea-generation/apps/ideas-pwa/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -58,7 +58,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        app: [bmc-pwa, idea-cards-pwa]
+        app: [bmc-pwa, ideas-pwa]
     outputs:
       bmc-build-hash: ${{ steps.build-bmc.outputs.hash }}
       ideas-build-hash: ${{ steps.build-ideas.outputs.hash }}
@@ -86,10 +86,10 @@ jobs:
           echo "hash=$HASH" >> $GITHUB_OUTPUT
 
       - name: Calculate build hash for Ideas PWA
-        if: matrix.app == 'idea-cards-pwa'
+        if: matrix.app == 'ideas-pwa'
         id: build-ideas
         run: |
-          HASH=$(find dist/apps/idea-cards-pwa -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
+          HASH=$(find dist/apps/ideas-pwa -type f -exec sha256sum {} \; | sort | sha256sum | cut -d' ' -f1)
           echo "hash=$HASH" >> $GITHUB_OUTPUT
 
       - name: Upload build artifacts
@@ -114,8 +114,8 @@ jobs:
       - name: Download Ideas PWA artifacts
         uses: actions/download-artifact@v4
         with:
-          name: idea-cards-pwa-build
-          path: dist/apps/idea-cards-pwa/
+          name: ideas-pwa-build
+          path: dist/apps/ideas-pwa/
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -142,13 +142,13 @@ jobs:
 
       - name: Deploy Ideas PWA to S3
         run: |
-          aws s3 sync dist/apps/idea-cards-pwa/ s3://${{ env.S3_BUCKET }}/ideas/ \
+          aws s3 sync dist/apps/ideas-pwa/ s3://${{ env.S3_BUCKET }}/ideas/ \
             --delete \
             --cache-control "public,max-age=31536000,immutable" \
             --exclude "*.html"
           
           # Set no-cache for HTML files
-          aws s3 sync dist/apps/idea-cards-pwa/ s3://${{ env.S3_BUCKET }}/ideas/ \
+          aws s3 sync dist/apps/ideas-pwa/ s3://${{ env.S3_BUCKET }}/ideas/ \
             --cache-control "public,max-age=0,must-revalidate" \
             --include "*.html"
 

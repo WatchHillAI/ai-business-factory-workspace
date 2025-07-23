@@ -1,7 +1,7 @@
 {
   "name": "ui-components",
-  "root": "packages/ui-components",
-  "sourceRoot": "packages/ui-components/src",
+  "root": "domains/shared/packages/ui-components",
+  "sourceRoot": "domains/shared/packages/ui-components/src",
   "projectType": "library",
   "targets": {
     "build": {
@@ -9,8 +9,8 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/packages/ui-components",
-        "main": "packages/ui-components/src/index.ts",
-        "tsConfig": "packages/ui-components/tsconfig.lib.json",
+        "main": "domains/shared/packages/ui-components/src/index.ts",
+        "tsConfig": "domains/shared/packages/ui-components/tsconfig.lib.json",
         "generatePackageJson": true
       }
     },
@@ -18,7 +18,7 @@
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "jestConfig": "packages/ui-components/jest.config.ts",
+        "jestConfig": "domains/shared/packages/ui-components/jest.config.ts",
         "passWithNoTests": true
       }
     }
