@@ -1,0 +1,315 @@
+# AI Agent System GraphQL Schema Extension
+# Extends existing AI Business Factory GraphQL API
+
+# Input types for AI agent analysis
+input IdeaAnalysisInput {
+  ideaText: String!
+  userContext: UserContext
+}
+
+input UserContext {
+  industry: String
+  targetMarket: String
+  budget: String
+  timeline: String
+  experienceLevel: String
+}
+
+# AI Agent Analysis Result Types
+type AIAgentAnalysisResult {
+  success: Boolean!
+  analysisId: String!
+  marketResearch: MarketResearchResult
+  financialModel: FinancialModelResult
+  founderFit: FounderFitResult
+  riskAssessment: RiskAssessmentResult
+  confidence: Float!
+  executionTime: Int!
+  error: String
+}
+
+type MarketResearchResult {
+  problemStatement: ProblemStatement
+  marketSignals: MarketSignals
+  customerEvidence: CustomerEvidence
+  competitorAnalysis: CompetitorAnalysis
+  marketTiming: MarketTiming
+  confidence: Float!
+}
+
+type ProblemStatement {
+  summary: String!
+  keyInsights: [String!]!
+  marketImpact: String
+  quantifiedProblem: String
+  validationEvidence: [String!]!
+}
+
+type MarketSignals {
+  searchTrendGrowth: String
+  fundingActivity: String
+  regulatoryChanges: [String!]!
+  marketSentiment: String
+  totalMarketSize: String
+  signalStrength: String!
+}
+
+type CustomerEvidence {
+  primarySegments: [CustomerSegment!]!
+  willingnessToPay: [PaymentEvidence!]!
+  customerValidation: CustomerValidation!
+}
+
+type CustomerSegment {
+  name: String!
+  size: String
+  painLevel: String
+  demographics: String
+  credibilityScore: Float!
+}
+
+type PaymentEvidence {
+  segment: String!
+  priceRange: String!
+  evidence: String!
+  confidence: Float!
+}
+
+type CustomerValidation {
+  totalInterviews: Int
+  validationScore: Float!
+  keyFindings: [String!]!
+}
+
+type CompetitorAnalysis {
+  directCompetitors: [Competitor!]!
+  indirectCompetitors: [Competitor!]!
+  differentiationOpportunities: [String!]!
+  competitiveAdvantage: String
+  marketGaps: [String!]!
+}
+
+type Competitor {
+  name: String!
+  marketShare: String
+  strengths: [String!]!
+  weaknesses: [String!]!
+  funding: String
+  differentiationGap: String
+}
+
+type MarketTiming {
+  assessment: String!
+  catalysts: [String!]!
+  risks: [String!]!
+  timeToMarket: String
+  goToMarketStrategy: String
+}
+
+# Placeholder types for future agents (Phase 2)
+type FinancialModelResult {
+  tamSamSom: TAMSAMSOMAnalysis
+  revenueProjections: [RevenueProjection!]
+  costAnalysis: CostAnalysis
+  fundingRequirements: FundingRequirements
+  confidence: Float
+}
+
+type TAMSAMSOMAnalysis {
+  tam: String
+  sam: String
+  som: String
+  methodology: String
+  assumptions: [String!]
+}
+
+type RevenueProjection {
+  year: Int!
+  revenue: String!
+  customers: Int
+  averageRevenuePer: String
+}
+
+type CostAnalysis {
+  developmentCosts: [CostItem!]
+  operationalCosts: [CostItem!]
+  marketingCosts: [CostItem!]
+  totalCosts: String
+}
+
+type CostItem {
+  category: String!
+  amount: String!
+  timeline: String
+  description: String
+}
+
+type FundingRequirements {
+  totalRequired: String
+  stages: [FundingStage!]
+  investors: [InvestorType!]
+  useOfFunds: [UseOfFunds!]
+}
+
+type FundingStage {
+  stage: String!
+  amount: String!
+  timeline: String
+  milestones: [String!]
+}
+
+type InvestorType {
+  type: String!
+  targetAmount: String
+  probability: Float
+}
+
+type UseOfFunds {
+  category: String!
+  percentage: Float!
+  amount: String!
+  description: String
+}
+
+type FounderFitResult {
+  skillsAnalysis: SkillsAnalysis
+  teamComposition: TeamComposition
+  investmentRequirements: InvestmentRequirements
+  confidence: Float
+}
+
+type SkillsAnalysis {
+  requiredSkills: [Skill!]!
+  currentSkills: [Skill!]
+  skillsGap: [Skill!]!
+  developmentPlan: String
+}
+
+type Skill {
+  name: String!
+  importance: String!
+  currentLevel: String
+  requiredLevel: String
+}
+
+type TeamComposition {
+  coreTeam: [TeamMember!]!
+  advisors: [Advisor!]!
+  hiringPlan: [HiringPlan!]!
+}
+
+type TeamMember {
+  role: String!
+  skills: [String!]!
+  salaryCost: String
+  equityPercentage: Float
+  timeline: String
+}
+
+type Advisor {
+  expertise: String!
+  value: String!
+  equityRange: String
+}
+
+type HiringPlan {
+  quarter: String!
+  roles: [String!]!
+  totalCost: String
+}
+
+type InvestmentRequirements {
+  totalRequired: String!
+  personalInvestment: String
+  externalFunding: String
+  timeline: String
+  riskLevel: String!
+}
+
+type RiskAssessmentResult {
+  overallRiskLevel: String!
+  riskCategories: [RiskCategory!]!
+  mitigationStrategies: [MitigationStrategy!]!
+  contingencyPlans: [ContingencyPlan!]!
+  successFactors: [String!]!
+  confidence: Float
+}
+
+type RiskCategory {
+  category: String!
+  riskLevel: String!
+  probability: Float!
+  impact: String!
+  description: String!
+  indicators: [String!]!
+}
+
+type MitigationStrategy {
+  riskCategory: String!
+  strategy: String!
+  cost: String
+  timeline: String
+  effectiveness: Float!
+}
+
+type ContingencyPlan {
+  scenario: String!
+  triggerConditions: [String!]!
+  actions: [String!]!
+  resources: String
+  timeline: String
+}
+
+# Health monitoring types
+type AIAgentHealthStatus {
+  status: String!
+  timestamp: String!
+  agents: [AgentHealth!]!
+  performance: PerformanceMetrics!
+  version: String!
+}
+
+type AgentHealth {
+  agentId: String!
+  status: String!
+  lastExecution: String
+  averageExecutionTime: Int
+  successRate: Float!
+  errorCount: Int
+}
+
+type PerformanceMetrics {
+  totalRequests: Int!
+  averageResponseTime: Int!
+  cacheHitRate: Float
+  errorRate: Float!
+  costPerRequest: String
+}
+
+# Root type extensions
+extend type Query {
+  # Get AI agent health status
+  aiAgentHealth: AIAgentHealthStatus!
+  
+  # Get analysis by ID
+  getAnalysisResult(analysisId: String!): AIAgentAnalysisResult
+}
+
+extend type Mutation {
+  # Analyze business idea with AI agents
+  analyzeIdea(input: IdeaAnalysisInput!): AIAgentAnalysisResult!
+  
+  # Regenerate specific analysis section
+  regenerateAnalysis(
+    analysisId: String!
+    sections: [String!]!
+  ): AIAgentAnalysisResult!
+}
+
+extend type Subscription {
+  # Subscribe to analysis progress updates
+  analysisProgress(analysisId: String!): AIAgentAnalysisResult!
+  
+  # Subscribe to agent health changes
+  agentHealthUpdates: AIAgentHealthStatus!
+}

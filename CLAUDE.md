@@ -256,6 +256,17 @@ npm run build
 # - dist/packages/            (Shared components)
 ```
 
+### Infrastructure Management:
+```bash
+# Infrastructure is now part of the monorepo (Phase 1 complete ✅)
+cd infrastructure/terraform/environments/dev
+terraform init
+terraform plan
+terraform apply
+
+# GitHub Actions use local infrastructure (no external repo dependency)
+```
+
 ### Production URLs:
 - **BMC PWA**: https://d1u91xxklexz0v.cloudfront.net
 - **Ideas PWA**: https://dc275i5wdcepx.cloudfront.net
@@ -263,9 +274,10 @@ npm run build
 ### Deployment Pipeline:
 GitHub Actions automatically handles:
 1. Building both PWA applications
-2. Uploading to S3 with path-based separation
-3. Invalidating CloudFront caches
-4. Running health checks
+2. Deploying infrastructure changes via Terraform
+3. Uploading to S3 with path-based separation
+4. Invalidating CloudFront caches
+5. Running health checks
 
 ## 🚨 IMPORTANT: Token Usage Economy
 

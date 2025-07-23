@@ -4,8 +4,8 @@
   "description": "Shared PWA workspace for AI Business Factory applications",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "domains/*/apps/*",
+    "domains/*/packages/*"
   ],
   "scripts": {
     "dev": "nx run-many --target=serve --all --parallel",

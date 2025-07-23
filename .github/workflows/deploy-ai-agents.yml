@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/ai-agents/**'
+      - 'domains/ai-orchestration/packages/agent-orchestrator/**'
       - '.github/workflows/deploy-ai-agents.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'packages/ai-agents/**'
+      - 'domains/ai-orchestration/packages/agent-orchestrator/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -41,14 +41,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'packages/ai-agents/package.json'
+          cache-dependency-path: 'domains/ai-orchestration/packages/agent-orchestrator/package.json'
           
       - name: Install dependencies
-        working-directory: ./packages/ai-agents
+        working-directory: ./domains/ai-orchestration/packages/agent-orchestrator
         run: npm ci
         
       - name: Run TypeScript type check
-        working-directory: ./packages/ai-agents
+        working-directory: ./domains/ai-orchestration/packages/agent-orchestrator
         run: |
           if [ -f "tsconfig.json" ]; then
             npx tsc --noEmit
@@ -57,7 +57,7 @@ jobs:
           fi
           
       - name: Run tests
-        working-directory: ./packages/ai-agents
+        working-directory: ./domains/ai-orchestration/packages/agent-orchestrator
         run: |
           if [ -f "package.json" ] && npm run test --if-present; then
             echo "Tests passed"
@@ -66,7 +66,7 @@ jobs:
           fi
           
       - name: Validate AI agent configuration
-        working-directory: ./packages/ai-agents
+        working-directory: ./domains/ai-orchestration/packages/agent-orchestrator
         run: |
           # Check if required files exist
           test -f "src/core/BaseAgent.ts" || { echo "BaseAgent.ts missing"; exit 1; }
@@ -84,13 +84,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Checkout infrastructure repository
-        uses: actions/checkout@v4
-        with:
-          repository: WatchHillAI/ai-business-factory-infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: infrastructure
+        # Infrastructure is now part of the workspace - no external checkout needed
           
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -161,20 +155,14 @@ jobs:
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v4
-        
-      - name: Checkout infrastructure repository
-        uses: actions/checkout@v4
-        with:
-          repository: WatchHillAI/ai-business-factory-infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: infrastructure
+        # Infrastructure is now part of the workspace - no external checkout needed
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: 'packages/ai-agents/package.json'
+          cache-dependency-path: 'domains/ai-orchestration/packages/agent-orchestrator/package.json'
           
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -190,7 +178,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           
       - name: Build AI Agent System
-        working-directory: ./packages/ai-agents
+        working-directory: ./domains/ai-orchestration/packages/agent-orchestrator
         run: |
           echo "📦 Installing dependencies..."
           npm ci
@@ -318,7 +306,7 @@ jobs:
         if: always()
         run: |
           echo "🧹 Cleaning up temporary files..."
-          rm -rf ./packages/ai-agents/lambda-package 2>/dev/null || true
+          rm -rf ./domains/ai-orchestration/packages/agent-orchestrator/lambda-package 2>/dev/null || true
           rm -f ./infrastructure/terraform/environments/*/tfplan-ai-agents 2>/dev/null || true
           echo "✅ Cleanup completed"
 

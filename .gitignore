@@ -91,3 +91,9 @@ temp/
 
 # PWA
 *.sw?
+
+# Terraform
+**/.terraform/
+**/terraform.tfstate*
+**/terraform.tfplan
+**/.terraform.lock.hcl
