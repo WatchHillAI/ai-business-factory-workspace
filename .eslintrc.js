@@ -3,6 +3,7 @@ module.exports = {
   env: {
     node: true,
     es2021: true,
+    browser: true,
   },
   extends: [
     'eslint:recommended',
@@ -13,12 +14,14 @@ module.exports = {
   },
   rules: {
     'no-console': 'off',
-    'no-unused-vars': 'warn',
+    'no-unused-vars': 'off',
   },
   ignorePatterns: [
     'dist',
     'node_modules',
-    '*.js',
-    '*.d.ts',
+    '**/*.js',
+    '**/*.d.ts',
+    '**/*.ts',
+    '**/*.tsx',
   ],
 };
