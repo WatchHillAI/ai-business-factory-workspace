@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowCloudFrontServicePrincipal",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::ai-business-factory-pwa-workspace-prod/*",
+      "Condition": {
+        "StringEquals": {
+          "AWS:SourceArn": [
+            "arn:aws:cloudfront::519284856023:distribution/ECJY9UZFVWA2R",
+            "arn:aws:cloudfront::519284856023:distribution/E2CDTV6GMBW385"
+          ]
+        }
+      }
+    }
+  ]
+}

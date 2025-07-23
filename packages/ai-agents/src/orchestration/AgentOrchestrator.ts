@@ -16,7 +16,7 @@ import { MetricsCollector } from '../utils/MetricsCollector';
 
 // Import specific agents
 import { MarketResearchAgent, MarketResearchInput, MarketResearchOutput } from '../agents/MarketResearchAgent';
-import { FinancialModelingAgent, FinancialModelingInput, FinancialModelingOutput } from '../agents/FinancialModelingAgent';
+import { FinancialModelingAgent, FinancialModelingInput, FinancialModelOutput } from '../agents/FinancialModelingAgent';
 import { FounderFitAgent, FounderFitInput, FounderFitOutput } from '../agents/FounderFitAgent';
 import { RiskAssessmentAgent, RiskAssessmentInput, RiskAssessmentOutput } from '../agents/RiskAssessmentAgent';
 
@@ -687,8 +687,8 @@ export class AgentOrchestrator {
   private calculateQualityMetrics(
     results: Partial<BusinessIdeaAnalysisOutput>
   ): BusinessIdeaAnalysisOutput['qualityMetrics'] {
-    let totalScore = 0;
-    let metricCount = 0;
+    const totalScore = 0;
+    const metricCount = 0;
 
     // Completeness: How much data was generated across all agents
     let completeness = 0;

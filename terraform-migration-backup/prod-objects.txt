@@ -1,0 +1,5 @@
+2025-07-22 17:11:03       6628 assets/index-CCDjV7sw.css
+2025-07-22 17:11:03     394952 assets/index-CX0O6Kls.js
+2025-07-22 12:37:51          0 favicon.ico
+2025-07-22 20:34:19       1114 index.html
+2025-07-22 17:11:03        473 manifest.json

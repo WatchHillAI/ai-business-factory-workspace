@@ -157,6 +157,11 @@ export class RiskAssessmentAgent extends BaseAgent<RiskAssessmentInput, RiskAsse
     this.marketDataProvider = dataSourceProvider;
   }
 
+  // Alias for backward compatibility
+  public async analyze(input: RiskAssessmentInput, context: AgentContext) {
+    return this.execute(input, context);
+  }
+
   protected async processRequest(
     input: RiskAssessmentInput,
     context: AgentContext

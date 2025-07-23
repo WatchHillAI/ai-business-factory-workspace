@@ -43,11 +43,21 @@ export const IdeaDetailView: React.FC<IdeaDetailViewProps> = ({
     return isDark ? 'text-red-400' : 'text-red-600';
   };
 
-  const formatCurrency = (amount: number) => {
-    if (amount >= 1000000000) return `$${(amount / 1000000000).toFixed(1)}B`;
-    if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
-    return `$${amount}`;
+  const formatCurrency = (amount: number | undefined | null | any) => {
+    // Handle undefined, null, objects, or non-numeric values
+    if (amount === undefined || amount === null || typeof amount === 'object' || isNaN(Number(amount))) {
+      return '$0';
+    }
+    
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) {
+      return '$0';
+    }
+    
+    if (numAmount >= 1000000000) return `$${(numAmount / 1000000000).toFixed(1)}B`;
+    if (numAmount >= 1000000) return `$${(numAmount / 1000000).toFixed(1)}M`;
+    if (numAmount >= 1000) return `$${(numAmount / 1000).toFixed(0)}K`;
+    return `$${numAmount}`;
   };
 
   const tabs = [
@@ -199,7 +209,7 @@ export const IdeaDetailView: React.FC<IdeaDetailViewProps> = ({
 const OverviewTab: React.FC<{
   idea: DetailedIdea;
   isDark: boolean;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: any) => string;
 }> = ({ idea, isDark, formatCurrency }) => {
   return (
     <div className="space-y-8">
@@ -583,7 +593,7 @@ const MarketAnalysisTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
                   <blockquote className={`text-sm italic border-l-2 pl-3 transition-colors duration-200 ${
                     isDark ? 'border-blue-500 dark-text-primary' : 'border-blue-300 text-gray-800'
                   }`}>
-                    "{customer.quote}"
+                    &quot;{customer.quote}&quot;
                   </blockquote>
                 </div>
                 <div className="flex items-center space-x-2 ml-4">
@@ -704,7 +714,7 @@ const MarketAnalysisTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
   );
 };
 
-const FinancialModelTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrency: (n: number) => string}> = ({ idea, isDark, formatCurrency }) => {
+const FinancialModelTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrency: (n: any) => string}> = ({ idea, isDark, formatCurrency }) => {
   const [selectedProjection, setSelectedProjection] = useState<number>(0);
   
   const getGrowthColor = (value: number) => {
@@ -1124,7 +1134,7 @@ const FinancialModelTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCu
   );
 };
 
-const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrency: (n: number) => string}> = ({ idea, isDark, formatCurrency }) => {
+const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrency: (n: any) => string}> = ({ idea, isDark, formatCurrency }) => {
   const [selectedCostCategory, setSelectedCostCategory] = useState<'development' | 'operations' | 'aiInference'>('development');
   
   const getImportanceColor = (importance: string) => {
@@ -1172,27 +1182,27 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
             Required Skills
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {idea.founderFit.requiredSkills.map((skill, idx) => (
+            {(idea.founderFit?.requiredSkills || []).map((skill, idx) => (
               <div key={idx} className={`p-4 rounded-lg border transition-colors duration-200 ${
                 isDark ? 'dark-bg-tertiary dark-border-primary' : 'bg-gray-50 border-gray-200'
               }`}>
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${getCategoryColor(skill.category)}`}>
-                    {skill.category}
+                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${getCategoryColor(skill?.category || 'technical')}`}>
+                    {skill?.category || 'N/A'}
                   </span>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getImportanceColor(skill.importance)}`}>
-                    {skill.importance}
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getImportanceColor(skill?.importance || 'nice-to-have')}`}>
+                    {skill?.importance || 'N/A'}
                   </span>
                 </div>
                 <h4 className={`font-semibold text-sm mb-2 transition-colors duration-200 ${
                   isDark ? 'dark-text-primary' : 'text-gray-900'
                 }`}>
-                  {skill.name}
+                  {skill?.name || 'N/A'}
                 </h4>
                 <p className={`text-xs mb-3 leading-relaxed transition-colors duration-200 ${
                   isDark ? 'dark-text-secondary' : 'text-gray-600'
                 }`}>
-                  {skill.description}
+                  {skill?.description || 'No description available'}
                 </p>
                 <div>
                   <span className={`text-xs font-medium transition-colors duration-200 ${
@@ -1203,7 +1213,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                   <ul className={`text-xs mt-1 space-y-1 transition-colors duration-200 ${
                     isDark ? 'dark-text-tertiary' : 'text-gray-500'
                   }`}>
-                    {skill.alternatives.map((alt, altIdx) => (
+                    {(skill?.alternatives || []).map((alt, altIdx) => (
                       <li key={altIdx} className="flex items-start">
                         <span className="text-gray-400 mr-1">•</span>
                         {alt}
@@ -1224,33 +1234,33 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
             Experience Requirements
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {idea.founderFit.experienceNeeds.map((exp, idx) => (
+            {(idea.founderFit?.experienceNeeds || []).map((exp, idx) => (
               <div key={idx} className={`p-4 rounded-lg border transition-colors duration-200 ${
                 isDark ? 'dark-bg-primary dark-border-primary' : 'bg-white border-gray-200'
               }`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl">{getExperienceIcon(exp.type)}</span>
+                    <span className="text-xl">{getExperienceIcon(exp?.type || 'startup')}</span>
                     <span className={`font-medium capitalize transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {exp.type} Experience
+                      {exp?.type || 'N/A'} Experience
                     </span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getImportanceColor(exp.importance)}`}>
-                    {exp.importance}
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getImportanceColor(exp?.importance || 'nice-to-have')}`}>
+                    {exp?.importance || 'N/A'}
                   </span>
                 </div>
                 <p className={`text-sm mb-2 transition-colors duration-200 ${
                   isDark ? 'dark-text-secondary' : 'text-gray-600'
                 }`}>
-                  {exp.description}
+                  {exp?.description || 'No description available'}
                 </p>
                 <div className="flex items-center justify-between text-xs">
                   <span className={`transition-colors duration-200 ${
                     isDark ? 'dark-text-tertiary' : 'text-gray-500'
                   }`}>
-                    Required: {exp.timeRequired}
+                    Required: {exp?.timeRequired || 'N/A'}
                   </span>
                 </div>
                 <div className="mt-2">
@@ -1262,7 +1272,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                   <ul className={`text-xs mt-1 space-y-1 transition-colors duration-200 ${
                     isDark ? 'dark-text-tertiary' : 'text-gray-500'
                   }`}>
-                    {exp.substitutesWith.map((sub, subIdx) => (
+                    {(exp?.substitutesWith || []).map((sub, subIdx) => (
                       <li key={subIdx} className="flex items-start">
                         <span className="text-gray-400 mr-1">•</span>
                         {sub}
@@ -1321,7 +1331,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                 <div className={`text-2xl font-bold mb-2 transition-colors duration-200 ${
                   isDark ? 'dark-text-primary' : 'text-gray-900'
                 }`}>
-                  {formatCurrency(idea.founderFit.costStructure.development.initial)}
+                  {formatCurrency(idea.founderFit?.costStructure?.development?.initial)}
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -1331,7 +1341,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.development.breakdown.personnel)}
+                      {formatCurrency(idea.founderFit?.costStructure?.development?.breakdown?.personnel)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1341,7 +1351,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.development.breakdown.technology)}
+                      {formatCurrency(idea.founderFit?.costStructure?.development?.breakdown?.technology)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1351,7 +1361,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.development.breakdown.infrastructure)}
+                      {formatCurrency(idea.founderFit?.costStructure?.development?.breakdown?.infrastructure)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1361,7 +1371,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.development.breakdown.thirdParty)}
+                      {formatCurrency(idea.founderFit?.costStructure?.development?.breakdown?.thirdParty)}
                     </span>
                   </div>
                 </div>
@@ -1374,7 +1384,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                   📈 Quarterly Scaling Costs
                 </h4>
                 <div className="space-y-3">
-                  {idea.founderFit.costStructure.development.scaling.map((cost, idx) => (
+                  {(idea.founderFit?.costStructure?.development?.scaling || []).map((cost, idx) => (
                     <div key={idx} className="flex justify-between items-center">
                       <span className={`text-sm transition-colors duration-200 ${
                         isDark ? 'dark-text-secondary' : 'text-gray-600'
@@ -1405,17 +1415,17 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                   📊 Quarterly Operations Costs
                 </h4>
                 <div className="space-y-3">
-                  {idea.founderFit.costStructure.operations.quarterly.map((cost, idx) => (
-                    <div key={idx} className="flex justify-between items-center">
+                  {Object.entries(idea.founderFit?.costStructure?.operations?.quarterly || {}).map(([quarter, amount]) => (
+                    <div key={quarter} className="flex justify-between items-center">
                       <span className={`text-sm transition-colors duration-200 ${
                         isDark ? 'dark-text-secondary' : 'text-gray-600'
                       }`}>
-                        Q{idx + 1}:
+                        {quarter}:
                       </span>
                       <span className={`font-semibold transition-colors duration-200 ${
                         isDark ? 'dark-text-primary' : 'text-gray-900'
                       }`}>
-                        {formatCurrency(cost)}
+                        {formatCurrency(amount)}
                       </span>
                     </div>
                   ))}
@@ -1436,7 +1446,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.operations.breakdown.customerSuccess)}
+                      {formatCurrency(idea.founderFit?.costStructure?.operations?.breakdown?.customerSuccess)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1446,7 +1456,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.operations.breakdown.sales)}
+                      {formatCurrency(idea.founderFit?.costStructure?.operations?.breakdown?.sales)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1456,7 +1466,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.operations.breakdown.marketing)}
+                      {formatCurrency(idea.founderFit?.costStructure?.operations?.breakdown?.marketing)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1466,7 +1476,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.operations.breakdown.legal)}
+                      {formatCurrency(idea.founderFit?.costStructure?.operations?.breakdown?.legal)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -1476,7 +1486,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-medium transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      {formatCurrency(idea.founderFit.costStructure.operations.breakdown.finance)}
+                      {formatCurrency(idea.founderFit?.costStructure?.operations?.breakdown?.finance)}
                     </span>
                   </div>
                 </div>
@@ -1503,7 +1513,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                     <span className={`font-semibold transition-colors duration-200 ${
                       isDark ? 'dark-text-primary' : 'text-gray-900'
                     }`}>
-                      ${idea.founderFit.costStructure.aiInference.costPerRequest}
+                      ${idea.founderFit?.costStructure?.aiInference?.costPerRequest || 0}
                     </span>
                   </div>
                   <div>
@@ -1513,7 +1523,7 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                       Expected Volume Growth:
                     </span>
                     <div className="space-y-2">
-                      {idea.founderFit.costStructure.aiInference.expectedVolume.map((volume, idx) => (
+                      {(idea.founderFit?.costStructure?.aiInference?.expectedVolume || []).map((volume, idx) => (
                         <div key={idx} className="flex justify-between text-sm">
                           <span className={`transition-colors duration-200 ${
                             isDark ? 'dark-text-secondary' : 'text-gray-600'
@@ -1539,10 +1549,14 @@ const TeamCostsTab: React.FC<{idea: DetailedIdea; isDark: boolean; formatCurrenc
                 <ul className={`text-sm space-y-2 transition-colors duration-200 ${
                   isDark ? 'dark-text-secondary' : 'text-gray-600'
                 }`}>
-                  {idea.founderFit.costStructure.aiInference.scalingFactors.map((factor, idx) => (
+                  {(idea.founderFit?.costStructure?.aiInference?.scalingFactors || []).map((factor, idx) => (
                     <li key={idx} className="flex items-start">
                       <span className="text-cyan-500 mr-2">•</span>
-                      {factor}
+                      <div>
+                        {typeof factor === 'string' ? factor : 
+                          <><strong>{(factor as any).factor}</strong>: {(factor as any).impact} ({(factor as any).timeline})</>
+                        }
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -2140,7 +2154,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
             <blockquote className={`text-lg font-medium italic transition-colors duration-200 ${
               isDark ? 'dark-text-primary' : 'text-gray-800'
             }`}>
-              "{idea.goToMarket.competitivePositioning.messaging}"
+              &quot;{idea.goToMarket.competitivePositioning.messaging}&quot;
             </blockquote>
           </div>
         </div>

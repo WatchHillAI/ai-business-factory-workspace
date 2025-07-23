@@ -84,13 +84,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
-      - name: Checkout infrastructure repository
-        uses: actions/checkout@v4
-        with:
-          repository: WatchHillAI/ai-business-factory-infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: infrastructure
+        # Infrastructure is now part of the workspace - no external checkout needed
           
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -161,13 +155,7 @@ jobs:
     steps:
       - name: Checkout workspace
         uses: actions/checkout@v4
-        
-      - name: Checkout infrastructure repository
-        uses: actions/checkout@v4
-        with:
-          repository: WatchHillAI/ai-business-factory-infrastructure
-          token: ${{ secrets.GITHUB_TOKEN }}
-          path: infrastructure
+        # Infrastructure is now part of the workspace - no external checkout needed
           
       - name: Setup Node.js
         uses: actions/setup-node@v4

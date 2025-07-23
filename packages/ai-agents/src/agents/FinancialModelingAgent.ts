@@ -197,6 +197,11 @@ export class FinancialModelingAgent extends BaseAgent<FinancialModelingInput, Fi
     this.marketDataProvider = dataSourceProvider;
   }
 
+  // Alias for backward compatibility
+  public async analyze(input: FinancialModelingInput, context: AgentContext) {
+    return this.execute(input, context);
+  }
+
   protected async processRequest(
     input: FinancialModelingInput,
     context: AgentContext

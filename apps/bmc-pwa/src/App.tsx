@@ -12,19 +12,15 @@ const App: React.FC = () => {
   const [showInstallPrompt, setShowInstallPrompt] = React.useState(false);
   const [installPromptEvent, setInstallPromptEvent] = React.useState<BeforeInstallPromptEvent | null>(null);
   
-  // Register service worker only in production
-  const swConfig = import.meta.env.PROD ? useRegisterSW({
+  // Register service worker - always call hook, but conditionally use config
+  const swConfig = useRegisterSW(import.meta.env.PROD ? {
     onRegistered(r: any) {
       console.log('SW Registered: ' + r);
     },
     onRegisterError(error: any) {
       console.log('SW registration error', error);
     },
-  }) : {
-    needRefresh: [false, () => {}],
-    offlineReady: [false],
-    updateServiceWorker: () => {},
-  };
+  } : {});
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],

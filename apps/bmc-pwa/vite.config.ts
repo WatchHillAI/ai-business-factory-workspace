@@ -14,6 +14,7 @@ export default defineConfig({
       devOptions: {
         enabled: false // Disable service worker in dev mode for hot reload
       },
+      mode: 'production',
       includeAssets: ['favicon.ico', 'icon.svg', 'pwa-64x64.png', 'maskable-icon-512x512.png'],
       manifest: {
         name: 'AI Business Factory - Business Model Canvas',
