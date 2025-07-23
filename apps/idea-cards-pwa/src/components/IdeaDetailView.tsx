@@ -593,7 +593,7 @@ const MarketAnalysisTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
                   <blockquote className={`text-sm italic border-l-2 pl-3 transition-colors duration-200 ${
                     isDark ? 'border-blue-500 dark-text-primary' : 'border-blue-300 text-gray-800'
                   }`}>
-                    "{customer.quote}"
+                    &quot;{customer.quote}&quot;
                   </blockquote>
                 </div>
                 <div className="flex items-center space-x-2 ml-4">
@@ -2154,7 +2154,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
             <blockquote className={`text-lg font-medium italic transition-colors duration-200 ${
               isDark ? 'dark-text-primary' : 'text-gray-800'
             }`}>
-              "{idea.goToMarket.competitivePositioning.messaging}"
+              &quot;{idea.goToMarket.competitivePositioning.messaging}&quot;
             </blockquote>
           </div>
         </div>

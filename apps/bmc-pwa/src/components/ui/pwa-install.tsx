@@ -119,7 +119,7 @@ export const PWAInstall: React.FC<PWAInstallProps> = ({ className }) => {
           <div>
             <p className="font-medium text-sm">Install BMC Factory</p>
             <p className="text-xs opacity-90 mt-1">
-              Tap the share button <span className="inline-block">⬆️</span> then "Add to Home Screen"
+              Tap the share button <span className="inline-block">⬆️</span> then &quot;Add to Home Screen&quot;
             </p>
           </div>
           <Button

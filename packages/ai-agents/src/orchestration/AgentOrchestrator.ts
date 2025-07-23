@@ -687,8 +687,8 @@ export class AgentOrchestrator {
   private calculateQualityMetrics(
     results: Partial<BusinessIdeaAnalysisOutput>
   ): BusinessIdeaAnalysisOutput['qualityMetrics'] {
-    let totalScore = 0;
-    let metricCount = 0;
+    const totalScore = 0;
+    const metricCount = 0;
 
     // Completeness: How much data was generated across all agents
     let completeness = 0;

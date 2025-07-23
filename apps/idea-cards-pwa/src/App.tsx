@@ -9,7 +9,11 @@ import { useTheme } from './hooks/useTheme';
 import { microservicesIntegration } from './lib/microservicesIntegration';
 import { BusinessIdea, UserSession } from './types';
 import { sampleDetailedIdea } from './data/sampleDetailedIdea';
+import { createLogger } from '@ai-business-factory/ui-components/src/utils/logger';
 import './styles/theme.css';
+
+// Initialize logger for Ideas PWA
+const logger = createLogger('IdeasPWA');
 
 // Main app content component
 const AppContent: React.FC = () => {
@@ -51,8 +55,12 @@ const AppContent: React.FC = () => {
   };
 
   const handleViewIdea = async (ideaId: string) => {
-    console.log('🔥 DETAILS BUTTON CLICKED - handleViewIdea called with:', ideaId);
-    console.log('🔥 Current state:', { currentView, selectedIdeaId, liveIdeasCount: liveIdeas.length });
+    logger.debug('Details button clicked', { 
+      ideaId, 
+      currentView, 
+      selectedIdeaId, 
+      liveIdeasCount: liveIdeas.length 
+    });
     
     setSelectedIdeaId(ideaId);
     setIsLoadingIdeas(true);
@@ -63,7 +71,10 @@ const AppContent: React.FC = () => {
       setSelectedIdeaData(comprehensiveData);
       setCurrentView('detail');
     } catch (error) {
-      console.error('Failed to load comprehensive analysis:', error);
+      logger.error('Failed to load comprehensive analysis', { 
+        error: error.message, 
+        ideaId 
+      });
       // Show sample detail view as fallback
       setSelectedIdeaData(sampleDetailedIdea);
       setCurrentView('detail');
@@ -94,7 +105,7 @@ const AppContent: React.FC = () => {
 
   // Load ideas (live or demo based on feature flags)
   useEffect(() => {
-    console.log('🚀 App mounting, loading ideas...');
+    logger.info('App initializing, loading ideas');
     
     const loadIdeas = async () => {
       setIsLoadingIdeas(true);
@@ -106,10 +117,13 @@ const AppContent: React.FC = () => {
         
         // Load opportunities (will use demo data if feature flags disable live data)
         const ideas = await microservicesIntegration.getLiveOpportunities(6);
-        console.log('✅ Loaded ideas:', ideas.length, 'items');
+        logger.info('Ideas loaded successfully', { 
+          count: ideas.length, 
+          source: 'microservices' 
+        });
         setLiveIdeas(ideas);
       } catch (error) {
-        console.error('❌ Failed to load ideas:', error);
+        logger.error('Failed to load ideas', { error: error.message });
         // Fallback to basic demo data on error
         const fallbackIdea: BusinessIdea = {
           id: 'ai-customer-support-001',
@@ -162,8 +176,10 @@ const AppContent: React.FC = () => {
     const selectedIdea = liveIdeas.find(idea => idea.id === selectedIdeaId);
     
     if (!selectedIdea) {
-      console.warn('Selected idea not found, returning to list');
-      console.warn('Looking for ID:', selectedIdeaId, 'in:', liveIdeas);
+      logger.warn('Selected idea not found, returning to list', {
+        selectedIdeaId,
+        availableIds: liveIdeas.map(idea => idea.id)
+      });
       setCurrentView('list');
       setSelectedIdeaId(null);
       return null;
@@ -276,7 +292,7 @@ const AppContent: React.FC = () => {
           <p className={`text-lg max-w-2xl mx-auto transition-colors duration-200 ${
             isDark ? 'dark-text-secondary' : 'text-gray-600'
           }`}>
-            Browse curated opportunities, see what's trending, and find ideas that match your skills and interests.
+            Browse curated opportunities, see what&apos;s trending, and find ideas that match your skills and interests.
           </p>
         </div>
         

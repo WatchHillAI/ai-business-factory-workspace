@@ -325,6 +325,13 @@ The backlog contains items we want to work on but haven't committed to the curre
 - [ ] Todo lists function correctly
 - [ ] Offline mode works when disconnected
 
+### Jest Testing Framework:
+- [ ] Run `npm test` to verify all tests pass
+- [ ] Component tests validate UI behavior correctly
+- [ ] Hook tests verify custom logic works
+- [ ] **🔄 IMPORTANT**: After modifying UI components, update corresponding Jest tests to match new props, behavior, or structure
+- [ ] Use `npm run test:watch` during development for immediate feedback
+
 ## Commands Reference
 
 ### Development:
