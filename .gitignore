@@ -18,6 +18,10 @@ dev-dist/
 .env
 .env.local
 .env.*.local
+# Keep .env.development for consistent dev experience
+# but ignore production/staging env files for security
+.env.production
+.env.staging
 
 # IDE
 .vscode/

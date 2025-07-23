@@ -13,6 +13,8 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  
+  console.log('🔥 IdeaCard rendered for:', idea.id, 'onView prop:', typeof onView);
   const renderCardHeader = () => {
     let titlePrefix = '';
     let titleClass = '';
@@ -280,7 +282,11 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
                   ? 'dark-btn-primary dark-focus-visible'
                   : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500'
               }`}
-              onClick={() => onView(idea.id)}
+              onClick={() => {
+                console.log('🔥 Details button clicked for idea:', idea.id);
+                console.log('🔥 Calling onView function:', onView);
+                onView(idea.id);
+              }}
             >
               <i className="fas fa-eye mr-2"></i>Details
             </button>
@@ -335,16 +341,19 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
     } else if (idea.tier === 'ai-generated') {
       return (
         <div className="p-6 pt-0">
-          <div className="w-full flex gap-3">
+          <div className="flex gap-2">
             <button 
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                 isDark 
                   ? 'bg-amber-600 text-white hover:bg-amber-700 dark-focus-visible'
                   : 'bg-amber-600 text-white hover:bg-amber-700 focus:ring-2 focus:ring-amber-500'
               }`}
-              onClick={() => onAIGenerate(idea.id)}
+              onClick={() => {
+                console.log('🔥 Details button clicked for AI-generated idea:', idea.id);
+                onView(idea.id);
+              }}
             >
-              <i className="fas fa-star mr-2"></i>Develop This Idea
+              <i className="fas fa-eye mr-2"></i>Details
             </button>
             <button 
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ${
@@ -354,7 +363,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
               }`}
               onClick={() => onAIGenerate(idea.id)}
             >
-              <i className="fas fa-sync mr-2"></i>Generate Alternative
+              <i className="fas fa-sync mr-2"></i>Generate
             </button>
           </div>
         </div>

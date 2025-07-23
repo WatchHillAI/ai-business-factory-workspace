@@ -230,6 +230,11 @@ export class FounderFitAgent extends BaseAgent<FounderFitInput, FounderFitOutput
     this.marketDataProvider = dataSourceProvider;
   }
 
+  // Alias for backward compatibility
+  public async analyze(input: FounderFitInput, context: AgentContext) {
+    return this.execute(input, context);
+  }
+
   protected async processRequest(
     input: FounderFitInput,
     context: AgentContext

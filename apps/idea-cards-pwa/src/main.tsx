@@ -11,4 +11,4 @@ root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
-);
+);console.log('ENV CHECK:', process.env.REACT_APP_ENABLE_LIVE_DATA)

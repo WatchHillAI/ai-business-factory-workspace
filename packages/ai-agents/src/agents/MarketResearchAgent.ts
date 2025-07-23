@@ -133,6 +133,11 @@ export class MarketResearchAgent extends BaseAgent<MarketResearchInput, MarketRe
     super(config, llmProvider, cacheProvider, dataSourceProvider);
   }
 
+  // Alias for backward compatibility
+  public async analyze(input: MarketResearchInput, context: AgentContext) {
+    return this.execute(input, context);
+  }
+
   protected async processRequest(
     input: MarketResearchInput, 
     context: AgentContext

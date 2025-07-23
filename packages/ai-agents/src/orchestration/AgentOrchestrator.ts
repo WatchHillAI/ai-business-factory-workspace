@@ -16,7 +16,7 @@ import { MetricsCollector } from '../utils/MetricsCollector';
 
 // Import specific agents
 import { MarketResearchAgent, MarketResearchInput, MarketResearchOutput } from '../agents/MarketResearchAgent';
-import { FinancialModelingAgent, FinancialModelingInput, FinancialModelingOutput } from '../agents/FinancialModelingAgent';
+import { FinancialModelingAgent, FinancialModelingInput, FinancialModelOutput } from '../agents/FinancialModelingAgent';
 import { FounderFitAgent, FounderFitInput, FounderFitOutput } from '../agents/FounderFitAgent';
 import { RiskAssessmentAgent, RiskAssessmentInput, RiskAssessmentOutput } from '../agents/RiskAssessmentAgent';
 

@@ -46,6 +46,20 @@ export interface BusinessIdea {
   generationPrompt?: string;
   validationScore?: number;
   
+  // Microservices integration data
+  microserviceData?: {
+    opportunityId: string;
+    sources: string[];
+    trends: string[];
+    rawData?: any;
+    analysisData?: any;
+    validationResults?: any;
+    businessPlan?: any;
+  };
+  
+  // Analysis metadata
+  aiAnalysisData?: any;
+  
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -61,7 +75,8 @@ export type IdeaCategory =
   | 'marketplace'
   | 'mobile'
   | 'web3'
-  | 'sustainability';
+  | 'sustainability'
+  | 'developer-tools';
 
 export type IdeaTier = 'public' | 'exclusive' | 'ai-generated';
 
