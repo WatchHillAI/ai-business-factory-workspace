@@ -857,23 +857,11 @@ output "rds_master_username" {
 
 output "rds_master_password_secret_arn" {
   description = "ARN of the secret containing the Aurora PostgreSQL master password"
-  value       = module.postgresql_cluster.master_password_secret_arn
+  value       = module.postgresql_cluster.secret_arn
 }
 
 # GitHub Actions integration outputs
 output "github_actions_role_arn" {
   description = "ARN of the GitHub Actions IAM role for OIDC authentication"
   value       = module.github_oidc.github_actions_role_arn
-}
-
-# Lambda function outputs
-output "lambda_functions" {
-  description = "Information about deployed Lambda functions"
-  value = {
-    ai_agent_orchestrator = {
-      name     = module.ai_agent_orchestrator.function_name
-      api_url  = module.ai_agent_orchestrator.api_gateway_url
-      arn      = module.ai_agent_orchestrator.function_arn
-    }
-  }
 }
