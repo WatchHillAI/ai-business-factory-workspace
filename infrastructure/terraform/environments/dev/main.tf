@@ -813,3 +813,67 @@ output "cost_summary" {
     }
   }
 }
+
+# =================== GITHUB OIDC INTEGRATION ===================
+
+# GitHub OIDC for secure CI/CD authentication
+module "github_oidc" {
+  source = "../../modules/github-oidc"
+  
+  project_name      = var.project_name
+  environment       = var.environment
+  aws_region        = var.aws_region
+  github_repository = "WatchHillAI/ai-business-factory-workspace"
+  
+  github_branches = [
+    "main",
+    "develop", 
+    "feature/live-ai-integration"
+  ]
+}
+
+# =================== OUTPUTS ===================
+
+# Database connection outputs
+output "rds_cluster_endpoint" {
+  description = "Aurora PostgreSQL cluster endpoint"
+  value       = module.postgresql_cluster.cluster_endpoint
+}
+
+output "rds_cluster_port" {
+  description = "Aurora PostgreSQL cluster port"
+  value       = module.postgresql_cluster.cluster_port
+}
+
+output "rds_database_name" {
+  description = "Aurora PostgreSQL database name"
+  value       = module.postgresql_cluster.database_name
+}
+
+output "rds_master_username" {
+  description = "Aurora PostgreSQL master username"
+  value       = module.postgresql_cluster.master_username
+}
+
+output "rds_master_password_secret_arn" {
+  description = "ARN of the secret containing the Aurora PostgreSQL master password"
+  value       = module.postgresql_cluster.master_password_secret_arn
+}
+
+# GitHub Actions integration outputs
+output "github_actions_role_arn" {
+  description = "ARN of the GitHub Actions IAM role for OIDC authentication"
+  value       = module.github_oidc.github_actions_role_arn
+}
+
+# Lambda function outputs
+output "lambda_functions" {
+  description = "Information about deployed Lambda functions"
+  value = {
+    ai_agent_orchestrator = {
+      name     = module.ai_agent_orchestrator.function_name
+      api_url  = module.ai_agent_orchestrator.api_gateway_url
+      arn      = module.ai_agent_orchestrator.function_arn
+    }
+  }
+}
