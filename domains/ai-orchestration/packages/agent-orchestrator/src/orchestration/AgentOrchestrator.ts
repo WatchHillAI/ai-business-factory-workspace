@@ -877,7 +877,8 @@ export function createAgentOrchestrator(config: OrchestratorConfig): AgentOrches
 export function createDevelopmentOrchestrator(): AgentOrchestrator {
   const config: OrchestratorConfig = {
     llmProvider: {
-      type: 'mock',
+      type: 'claude',
+      apiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY,
     },
     cacheProvider: {
       type: 'memory',

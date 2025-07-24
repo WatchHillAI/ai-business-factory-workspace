@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Badge, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@ai-business-factory/ui-components';
 import { ThemeProvider } from './components/ThemeProvider';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -8,6 +8,7 @@ import { useTheme } from './hooks/useTheme';
 import { sampleIdeas } from './data/sampleIdeas';
 import { sampleDetailedIdea } from './data/sampleDetailedIdea';
 import { BusinessIdea, UserSession } from './types';
+import { aiService } from './services/aiService';
 import './styles/theme.css';
 
 // Main app content component
@@ -19,6 +20,28 @@ const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<'list' | 'detail'>('list');
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
   const [savedIdeaIds, setSavedIdeaIds] = useState<string[]>([]);
+  const [ideas, setIdeas] = useState<BusinessIdea[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Load ideas on component mount
+  useEffect(() => {
+    const loadIdeas = async () => {
+      setIsLoading(true);
+      try {
+        console.log('Loading ideas...');
+        const generatedIdeas = await aiService.generateIdeas();
+        setIdeas(generatedIdeas);
+        console.log('Ideas loaded:', generatedIdeas.length);
+      } catch (error) {
+        console.error('Failed to load ideas:', error);
+        setIdeas(sampleIdeas); // Fallback
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadIdeas();
+  }, []);
   
   // Mock user session for progressive disclosure
   const mockSession: UserSession = {
@@ -141,20 +164,38 @@ const AppContent: React.FC = () => {
         </div>
         
         {/* Idea Cards Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-          {sampleIdeas.map((idea) => (
-            <IdeaCard
-              key={idea.id}
-              idea={idea}
-              isSaved={savedIdeaIds.includes(idea.id)}
-              onSave={handleSaveIdea}
-              onView={handleViewIdea}
-              onExclusiveClick={handleExclusiveClick}
-              onAIGenerate={handleAIGenerate}
-              showProgressiveDisclosure={mockSession.progressiveDisclosureActive}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className={`text-lg transition-colors duration-200 ${
+              isDark ? 'dark-text-secondary' : 'text-gray-600'
+            }`}>
+              🤖 Generating AI-powered business ideas...
+            </div>
+            <div className={`text-sm mt-2 transition-colors duration-200 ${
+              isDark ? 'dark-text-tertiary' : 'text-gray-500'
+            }`}>
+              {import.meta.env.VITE_USE_AI_GENERATION === 'true' 
+                ? 'Using live Claude AI analysis' 
+                : 'Loading sample data'
+              }
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+            {ideas.map((idea) => (
+              <IdeaCard
+                key={idea.id}
+                idea={idea}
+                isSaved={savedIdeaIds.includes(idea.id)}
+                onSave={handleSaveIdea}
+                onView={handleViewIdea}
+                onExclusiveClick={handleExclusiveClick}
+                onAIGenerate={handleAIGenerate}
+                showProgressiveDisclosure={mockSession.progressiveDisclosureActive}
+              />
+            ))}
+          </div>
+        )}
         
         <div className={`rounded-lg border p-6 transition-colors duration-200 ${
           isDark 
