@@ -16,7 +16,7 @@ import { MetricsCollector } from '../utils/MetricsCollector';
 
 // Import specific agents
 import { MarketResearchAgent, MarketResearchInput, MarketResearchOutput } from '../agents/MarketResearchAgent';
-import { FinancialModelingAgent, FinancialModelingInput, FinancialModelingOutput } from '../agents/FinancialModelingAgent';
+import { FinancialModelingAgent, FinancialModelingInput, FinancialModelOutput } from '../agents/FinancialModelingAgent';
 import { FounderFitAgent, FounderFitInput, FounderFitOutput } from '../agents/FounderFitAgent';
 import { RiskAssessmentAgent, RiskAssessmentInput, RiskAssessmentOutput } from '../agents/RiskAssessmentAgent';
 
@@ -78,7 +78,7 @@ export interface BusinessIdeaAnalysisOutput {
   
   // Agent results
   marketResearch?: AgentResult<MarketResearchOutput>;
-  financialModeling?: AgentResult<FinancialModelingOutput>;
+  financialModeling?: AgentResult<FinancialModelOutput>;
   founderFit?: AgentResult<FounderFitOutput>;
   riskAssessment?: AgentResult<RiskAssessmentOutput>;
   
@@ -319,13 +319,13 @@ export class AgentOrchestrator {
           };
 
           const financialModelingAgent = this.agents.get('financial-modeling') as FinancialModelingAgent;
-          const financialResult = await financialModelingAgent.analyze(financialModelingInput, context);
+          const financialResult = await financialModelingAgent.execute(financialModelingInput, context);
           
           results.financialModeling = financialResult;
           agentsExecuted.push('financial-modeling');
           
-          if (financialResult.confidence?.overall) {
-            totalConfidence += financialResult.confidence.overall;
+          if (financialResult.success && financialResult.metadata.confidence) {
+            totalConfidence += financialResult.metadata.confidence;
             agentCount++;
           }
           
@@ -366,29 +366,29 @@ export class AgentOrchestrator {
             ideaText: input.idea.description,
             title: input.idea.title,
             category: input.idea.category,
-            founderProfile: {
-              background: input.userContext?.experience?.join(', ') || 'Not specified',
+            founderBackground: {
+              experience: input.userContext?.experience?.join(', ') || 'Not specified',
+              industry: input.idea.category,
+              skills: input.userContext?.skills || [],
               education: 'Not specified',
-              previousExperience: input.userContext?.experience?.join(', ') || 'Not specified',
-              expertise: input.userContext?.skills || [],
-              network: 'Not specified',
-              motivation: `Interest in ${input.idea.category}`
+              network: 'Not specified'
             },
             userContext: {
               budget: input.userContext?.budget?.toString(),
               timeline: input.userContext?.timeframe,
-              experience: input.userContext?.experience?.join(', ')
+              commitment: 'full-time',
+              riskTolerance: 'medium'
             }
           };
 
           const founderFitAgent = this.agents.get('founder-fit') as FounderFitAgent;
-          const founderResult = await founderFitAgent.analyze(founderFitInput, context);
+          const founderResult = await founderFitAgent.execute(founderFitInput, context);
           
           results.founderFit = founderResult;
           agentsExecuted.push('founder-fit');
           
-          if (founderResult.confidence?.overall) {
-            totalConfidence += founderResult.confidence.overall;
+          if (founderResult.success && founderResult.metadata.confidence) {
+            totalConfidence += founderResult.metadata.confidence;
             agentCount++;
           }
           
@@ -438,8 +438,8 @@ export class AgentOrchestrator {
             } : undefined,
             teamProfile: results.founderFit?.data ? {
               founderExperience: input.userContext?.experience?.join(', ') || 'Not specified',
-              teamSize: results.founderFit.data.teamRequirements?.coreRoles?.length || 1,
-              missingSkills: results.founderFit.data.skillsAnalysis?.skillGaps?.map(gap => gap.skill) || []
+              teamSize: results.founderFit.data.teamComposition?.coreTeam?.length || 1,
+              missingSkills: results.founderFit.data.skillsAnalysis?.requiredSkills?.filter(skill => skill.gap !== 'none').map(skill => skill.name) || []
             } : undefined,
             userContext: {
               budget: input.userContext?.budget?.toString(),
@@ -449,13 +449,13 @@ export class AgentOrchestrator {
           };
 
           const riskAssessmentAgent = this.agents.get('risk-assessment') as RiskAssessmentAgent;
-          const riskResult = await riskAssessmentAgent.analyze(riskAssessmentInput, context);
+          const riskResult = await riskAssessmentAgent.execute(riskAssessmentInput, context);
           
           results.riskAssessment = riskResult;
           agentsExecuted.push('risk-assessment');
           
-          if (riskResult.confidence?.overall) {
-            totalConfidence += riskResult.confidence.overall;
+          if (riskResult.success && riskResult.metadata.confidence) {
+            totalConfidence += riskResult.metadata.confidence;
             agentCount++;
           }
           
@@ -498,6 +498,7 @@ export class AgentOrchestrator {
       const finalResult: BusinessIdeaAnalysisOutput = {
         ...results,
         success: agentsFailed.length === 0,
+        requestId,
         metadata: {
           totalExecutionTime,
           agentsExecuted,
@@ -712,7 +713,7 @@ export class AgentOrchestrator {
       maxCompleteness += 25;
       completeness += 15;
       if (results.founderFit.data?.skillsAnalysis) completeness += 5;
-      if (results.founderFit.data?.teamRequirements) completeness += 5;
+      if (results.founderFit.data?.teamComposition) completeness += 5;
     }
     
     if (results.riskAssessment?.success) {
@@ -772,8 +773,8 @@ export class AgentOrchestrator {
     
     if (results.founderFit?.success && results.founderFit.data) {
       const ff = results.founderFit.data;
-      if (ff.skillsAnalysis?.skillGaps?.length > 0) actionability += 15;
-      if (ff.investmentPlan?.immediatePriorities?.length > 0) actionability += 10;
+      if (ff.skillsAnalysis?.requiredSkills?.some(skill => skill.gap !== 'none')) actionability += 15;
+      if (ff.recommendations?.immediate?.length > 0) actionability += 10;
     }
     
     if (results.riskAssessment?.success && results.riskAssessment.data) {
@@ -877,8 +878,8 @@ export function createAgentOrchestrator(config: OrchestratorConfig): AgentOrches
 export function createDevelopmentOrchestrator(): AgentOrchestrator {
   const config: OrchestratorConfig = {
     llmProvider: {
-      type: 'claude',
-      apiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY,
+      type: 'mock', // Use mock LLM to avoid API key requirement
+      apiKey: 'mock-key-for-development',
     },
     cacheProvider: {
       type: 'memory',

@@ -94,7 +94,7 @@ export const IdeaDetailView: React.FC<IdeaDetailViewProps> = ({
                   <p className={`text-sm transition-colors duration-200 ${
                     isDark ? 'dark-text-tertiary' : 'text-gray-500'
                   }`}>
-                    Updated {new Date(idea.dataFreshness.lastUpdated).toLocaleDateString()}
+                    Updated {new Date(idea.dataFreshness?.lastUpdated || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -1816,7 +1816,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
         </h2>
 
         <div className="space-y-4">
-          {idea.goToMarket.targetSegments.map((segment, idx) => (
+          {(idea.goToMarket?.targetSegments || []).map((segment, idx) => (
             <div
               key={idx}
               className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
@@ -1950,7 +1950,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
 
         {/* Selected Phase Channels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {idea.goToMarket.channelStrategy[selectedPhase].map((channel, idx) => (
+          {(idea.goToMarket?.channelStrategy?.[selectedPhase] || []).map((channel, idx) => (
             <div
               key={idx}
               className={`p-4 rounded-lg border transition-colors duration-200 ${
@@ -2060,7 +2060,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
               🎯 Key Differentiators
             </h3>
             <div className="space-y-3">
-              {idea.goToMarket.competitivePositioning.differentiation.map((diff, idx) => (
+              {(idea.goToMarket?.competitivePositioning?.differentiation || []).map((diff, idx) => (
                 <div key={idx} className={`p-3 rounded-lg transition-colors duration-200 ${
                   isDark ? 'dark-bg-tertiary' : 'bg-gray-50'
                 }`}>
@@ -2097,7 +2097,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <p className={`text-sm font-semibold transition-colors duration-200 ${
                     isDark ? 'dark-text-primary' : 'text-gray-900'
                   }`}>
-                    {idea.goToMarket.competitivePositioning.pricing.strategy}
+                    {idea.goToMarket?.competitivePositioning?.pricing?.strategy || 'Strategy TBD'}
                   </p>
                 </div>
                 <div>
@@ -2109,7 +2109,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <p className={`text-sm transition-colors duration-200 ${
                     isDark ? 'dark-text-secondary' : 'text-gray-600'
                   }`}>
-                    {idea.goToMarket.competitivePositioning.pricing.justification}
+                    {idea.goToMarket?.competitivePositioning?.pricing?.justification || 'Justification TBD'}
                   </p>
                 </div>
                 <div>
@@ -2119,7 +2119,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                     Competitive Advantage:
                   </span>
                   <p className={`text-sm font-semibold text-green-600`}>
-                    {idea.goToMarket.competitivePositioning.pricing.competitiveAdvantage}
+                    {idea.goToMarket?.competitivePositioning?.pricing?.competitiveAdvantage || 'Advantage TBD'}
                   </p>
                 </div>
               </div>
@@ -2140,7 +2140,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
             <blockquote className={`text-lg font-medium italic transition-colors duration-200 ${
               isDark ? 'dark-text-primary' : 'text-gray-800'
             }`}>
-              "{idea.goToMarket.competitivePositioning.messaging}"
+              "{idea.goToMarket?.competitivePositioning?.messaging || 'Messaging TBD'}"
             </blockquote>
           </div>
         </div>
@@ -2164,7 +2164,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
             Key Milestones
           </h3>
           <div className="space-y-4">
-            {idea.goToMarket.tractionMilestones.map((milestone, idx) => (
+            {idea.goToMarket?.tractionMilestones || [].map((milestone, idx) => (
               <div
                 key={idx}
                 className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
@@ -2268,7 +2268,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <span className={`font-semibold transition-colors duration-200 ${
                     isDark ? 'dark-text-primary' : 'text-gray-900'
                   }`}>
-                    {idea.goToMarket.launchStrategy.betaProgram.size} customers
+                    {idea.goToMarket?.launchStrategy.betaProgram.size} customers
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -2278,7 +2278,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <span className={`font-semibold transition-colors duration-200 ${
                     isDark ? 'dark-text-primary' : 'text-gray-900'
                   }`}>
-                    {idea.goToMarket.launchStrategy.betaProgram.duration}
+                    {idea.goToMarket?.launchStrategy.betaProgram.duration}
                   </span>
                 </div>
                 <div className="mt-3">
@@ -2290,7 +2290,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <ul className={`text-xs space-y-1 transition-colors duration-200 ${
                     isDark ? 'dark-text-secondary' : 'text-gray-600'
                   }`}>
-                    {idea.goToMarket.launchStrategy.betaProgram.criteria.map((criteria, idx) => (
+                    {idea.goToMarket?.launchStrategy.betaProgram.criteria.map((criteria, idx) => (
                       <li key={idx} className="flex items-start">
                         <span className="text-green-500 mr-1">•</span>
                         {criteria}
@@ -2315,7 +2315,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <span className={`font-semibold transition-colors duration-200 ${
                     isDark ? 'dark-text-primary' : 'text-gray-900'
                   }`}>
-                    {idea.goToMarket.launchStrategy.publicLaunch.timeline}
+                    {idea.goToMarket?.launchStrategy.publicLaunch.timeline}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -2325,7 +2325,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <span className={`font-semibold transition-colors duration-200 ${
                     isDark ? 'dark-text-primary' : 'text-gray-900'
                   }`}>
-                    ${idea.goToMarket.launchStrategy.publicLaunch.budget.toLocaleString()}
+                    ${idea.goToMarket?.launchStrategy.publicLaunch.budget.toLocaleString()}
                   </span>
                 </div>
                 <div className="mt-3">
@@ -2337,7 +2337,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
                   <ul className={`text-xs space-y-1 transition-colors duration-200 ${
                     isDark ? 'dark-text-secondary' : 'text-gray-600'
                   }`}>
-                    {idea.goToMarket.launchStrategy.publicLaunch.channels.map((channel, idx) => (
+                    {idea.goToMarket?.launchStrategy.publicLaunch.channels.map((channel, idx) => (
                       <li key={idx} className="flex items-start">
                         <span className="text-purple-500 mr-1">•</span>
                         {channel}
@@ -2412,10 +2412,10 @@ const RiskAssessmentTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
 
   const getAllRisks = () => {
     return [
-      ...idea.riskAssessment.marketRisks,
-      ...idea.riskAssessment.technicalRisks,
-      ...idea.riskAssessment.executionRisks,
-      ...idea.riskAssessment.financialRisks
+      ...(idea.riskAssessment?.marketRisks || []),
+      ...(idea.riskAssessment?.technicalRisks || []),
+      ...(idea.riskAssessment?.executionRisks || []),
+      ...(idea.riskAssessment?.financialRisks || [])
     ];
   };
 
@@ -2440,10 +2440,10 @@ const RiskAssessmentTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { category: 'marketRisks', label: 'Market', icon: '🏪', count: idea.riskAssessment.marketRisks.length },
-            { category: 'technicalRisks', label: 'Technical', icon: '⚙️', count: idea.riskAssessment.technicalRisks.length },
-            { category: 'executionRisks', label: 'Execution', icon: '🎯', count: idea.riskAssessment.executionRisks.length },
-            { category: 'financialRisks', label: 'Financial', icon: '💰', count: idea.riskAssessment.financialRisks.length }
+            { category: 'marketRisks', label: 'Market', icon: '🏪', count: idea.riskAssessment?.marketRisks?.length || 0 },
+            { category: 'technicalRisks', label: 'Technical', icon: '⚙️', count: idea.riskAssessment?.technicalRisks?.length || 0 },
+            { category: 'executionRisks', label: 'Execution', icon: '🎯', count: idea.riskAssessment?.executionRisks?.length || 0 },
+            { category: 'financialRisks', label: 'Financial', icon: '💰', count: idea.riskAssessment?.financialRisks?.length || 0 }
           ].map((cat) => (
             <div key={cat.category} className={`p-4 text-center rounded-lg transition-colors duration-200 ${
               isDark ? 'dark-bg-tertiary' : 'bg-gray-50'
@@ -2669,7 +2669,7 @@ const RiskAssessmentTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
                 <ul className={`text-sm space-y-1 transition-colors duration-200 ${
                   isDark ? 'dark-text-secondary' : 'text-gray-600'
                 }`}>
-                  {idea.riskAssessment.mitigationPlans.priority1.map((plan, idx) => (
+                  {idea.riskAssessment?.mitigationPlans.priority1.map((plan, idx) => (
                     <li key={idx} className="flex items-start">
                       <span className="text-red-500 mr-2">•</span>
                       {plan}
@@ -2690,7 +2690,7 @@ const RiskAssessmentTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
                 <ul className={`text-sm space-y-1 transition-colors duration-200 ${
                   isDark ? 'dark-text-secondary' : 'text-gray-600'
                 }`}>
-                  {idea.riskAssessment.mitigationPlans.priority2.map((plan, idx) => (
+                  {idea.riskAssessment?.mitigationPlans.priority2.map((plan, idx) => (
                     <li key={idx} className="flex items-start">
                       <span className="text-amber-500 mr-2">•</span>
                       {plan}
@@ -2711,7 +2711,7 @@ const RiskAssessmentTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
                 <ul className={`text-sm space-y-1 transition-colors duration-200 ${
                   isDark ? 'dark-text-secondary' : 'text-gray-600'
                 }`}>
-                  {idea.riskAssessment.mitigationPlans.priority3.map((plan, idx) => (
+                  {idea.riskAssessment?.mitigationPlans.priority3.map((plan, idx) => (
                     <li key={idx} className="flex items-start">
                       <span className="text-green-500 mr-2">•</span>
                       {plan}
@@ -2742,7 +2742,7 @@ const RiskAssessmentTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ id
                 </h4>
               </div>
               <div className="space-y-3">
-                {idea.riskAssessment.contingencyPlans.map((plan, idx) => (
+                {(idea.riskAssessment?.contingencyPlans || []).map((plan, idx) => (
                   <div key={idx} className={`p-3 rounded-lg transition-colors duration-200 ${
                     isDark ? 'dark-bg-primary' : 'bg-white'
                   }`}>

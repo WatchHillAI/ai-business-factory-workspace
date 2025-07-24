@@ -8,6 +8,35 @@ AI Business Factory PWA Workspace - A revolutionary shared monorepo for AI-power
 **Infrastructure**: Complete framework with orchestration, caching, quality assurance
 **Next Phase**: Financial Modeling, Founder Fit, and Risk Assessment agents
 
+## 🗂️ **CURRENT DEVELOPMENT OBJECTIVES (July 24, 2025)**
+
+### **Primary Goal**: Implement Persistent Storage for AI-Generated Business Ideas
+
+**Problem**: Ideas PWA generates comprehensive business intelligence but lacks persistence. All cards show same fallback data because analysis isn't saved.
+
+**Solution**: PostgreSQL JSONB storage architecture (ADR-003)
+
+### **Active Todo List**:
+- [ ] **Deploy Database Schema**: PostgreSQL JSONB schema via GitHub Actions (not manual Terraform)
+- [ ] **Implement CRUD APIs**: Lambda functions for business ideas persistence  
+- [ ] **Update AI Orchestrator**: Save analysis results to database after generation
+- [ ] **Connect Ideas PWA**: Load from database instead of generating on-demand
+- [ ] **Add Data Management**: Search, filtering, idea history features
+
+### **Technical Context**:
+- ✅ **Database Schema Created**: Comprehensive PostgreSQL structure matching UI tabs
+- ✅ **Deployment Scripts Ready**: Terraform integration with AWS Secrets Manager
+- ✅ **UI Compatibility Verified**: JSONB structure matches TypeScript interfaces
+- ✅ **AWS Infrastructure**: Aurora PostgreSQL Serverless already deployed
+
+### **Next Session Priorities**:
+1. Deploy schema through GitHub Actions workflow
+2. Implement business ideas CRUD API endpoints
+3. Update orchestrator to persist analysis results
+4. Replace PWA in-memory generation with database queries
+
+**Documentation**: See `docs/ADR-003-PostgreSQL-JSONB-Storage-Architecture.md` for complete technical details.
+
 ## 📊 AI-Assisted Development Timeline Estimation Guide
 
 Based on real-world migration data (11 repos → 1 monorepo completed in 4 hours vs 8-12 day projection):
@@ -41,7 +70,39 @@ Actual Result: Often even faster with good preparation
 
 ## Development Server Management
 
-### 🚀 Starting Development Servers
+### 🚀 **ALWAYS USE THE STARTUP SCRIPT** ⭐
+
+**📍 CRITICAL**: Use the reliable startup script for ALL development server operations:
+
+```bash
+# Navigate to workspace root
+cd /Users/cnorton/Development/ai-business-factory-workspace
+
+# RECOMMENDED: Start both PWAs with full reliability
+./scripts/dev-server-control.sh start-both
+
+# Alternative commands:
+./scripts/dev-server-control.sh start      # Ideas PWA only
+./scripts/dev-server-control.sh stop       # Stop all servers
+./scripts/dev-server-control.sh restart    # Clean restart
+./scripts/dev-server-control.sh status     # Detailed status
+./scripts/dev-server-control.sh health     # Quick health check
+./scripts/dev-server-control.sh logs       # Follow logs
+
+# Access URLs:
+# - BMC PWA: http://localhost:3001/
+# - Ideas PWA: http://localhost:3002/
+```
+
+**✅ Why Use This Script:**
+- **100% reliable startup/shutdown** with proper process cleanup
+- **Port verification** and conflict resolution
+- **Build verification** before starting (prevents TypeScript errors)
+- **AI environment setup** (automatically sets `VITE_USE_AI_GENERATION=true`)
+- **Health monitoring** with detailed status reporting
+- **Proper log management** with separate log files
+
+### 🚀 Legacy Methods (Use Script Above Instead)
 
 #### Quick Start (Both Apps):
 ```bash
