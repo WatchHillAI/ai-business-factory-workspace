@@ -2164,7 +2164,7 @@ const StrategyTab: React.FC<{idea: DetailedIdea; isDark: boolean}> = ({ idea, is
             Key Milestones
           </h3>
           <div className="space-y-4">
-            {idea.goToMarket?.tractionMilestones || [].map((milestone, idx) => (
+            {(idea.goToMarket?.tractionMilestones || []).map((milestone, idx) => (
               <div
                 key={idx}
                 className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
