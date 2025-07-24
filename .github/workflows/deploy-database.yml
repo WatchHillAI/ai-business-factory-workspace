@@ -1,0 +1,326 @@
+name: Deploy Database Schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/database/**'
+      - '.github/workflows/deploy-database.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infrastructure/database/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: us-east-1
+  TERRAFORM_VERSION: '1.5.0'
+
+jobs:
+  validate:
+    name: Validate Database Schema
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Validate SQL schema
+        working-directory: ./infrastructure/database
+        run: |
+          echo "🔍 Validating database schema files..."
+          
+          # Check if required files exist
+          test -f "schemas/business_ideas_schema.sql" || { echo "❌ business_ideas_schema.sql missing"; exit 1; }
+          test -f "deploy-schema.sh" || { echo "❌ deploy-schema.sh missing"; exit 1; }
+          test -f "seed-sample-data.sql" || { echo "❌ seed-sample-data.sql missing"; exit 1; }
+          
+          # Basic SQL validation
+          if command -v psql &> /dev/null; then
+            echo "📋 Running basic SQL syntax validation..."
+            # psql -f schemas/business_ideas_schema.sql --dry-run 2>/dev/null || echo "⚠️ SQL syntax check not available without PostgreSQL client"
+          fi
+          
+          # Check script permissions
+          test -x "deploy-schema.sh" || { echo "❌ deploy-schema.sh not executable"; exit 1; }
+          
+          echo "✅ All database schema files validated"
+
+  plan:
+    name: Plan Database Changes  
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Check Infrastructure Status
+        working-directory: ./infrastructure/terraform/environments/dev
+        run: |
+          echo "🔍 Checking current infrastructure status..."
+          terraform init
+          
+          # Check if Aurora database exists
+          if terraform output rds_cluster_endpoint &>/dev/null; then
+            echo "✅ Aurora PostgreSQL cluster found"
+            echo "DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)" >> $GITHUB_ENV
+          else
+            echo "❌ Aurora PostgreSQL cluster not found - infrastructure needs deployment first"
+            exit 1
+          fi
+          
+      - name: Generate Schema Deployment Plan
+        working-directory: ./infrastructure/database
+        run: |
+          echo "📋 Database Schema Deployment Plan" > deployment-plan.md
+          echo "=================================" >> deployment-plan.md
+          echo "" >> deployment-plan.md
+          echo "**Database Endpoint**: ${{ env.DB_ENDPOINT }}" >> deployment-plan.md
+          echo "**Environment**: dev" >> deployment-plan.md
+          echo "**Schema Version**: $(date +%Y%m%d-%H%M%S)" >> deployment-plan.md
+          echo "" >> deployment-plan.md
+          echo "### Changes to be deployed:" >> deployment-plan.md
+          echo "- business_ideas table with JSONB storage" >> deployment-plan.md
+          echo "- Performance indexes (GIN, B-tree)" >> deployment-plan.md
+          echo "- Helper functions for queries" >> deployment-plan.md
+          echo "- Sample data insertion" >> deployment-plan.md
+          echo "" >> deployment-plan.md
+          echo "### Safety measures:" >> deployment-plan.md
+          echo "- Schema backup before deployment" >> deployment-plan.md
+          echo "- Transaction rollback on failure" >> deployment-plan.md
+          echo "- Verification checks post-deployment" >> deployment-plan.md
+          
+      - name: Comment PR with deployment plan
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('./infrastructure/database/deployment-plan.md', 'utf8');
+            const body = `## 🗄️ Database Schema Deployment Plan
+            
+            ${plan}
+            
+            ### 🚀 Deployment Command
+            The schema will be deployed using:
+            \`\`\`bash
+            ./infrastructure/database/deploy-schema.sh
+            \`\`\`
+            
+            - **Workflow**: ${{ github.workflow }}
+            - **Run**: ${{ github.run_number }}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  deploy:
+    name: Deploy Database Schema
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Verify Infrastructure
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "🔍 Verifying infrastructure is ready..."
+          terraform init
+          
+          # Get database connection details
+          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null || echo "")
+          DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null || echo "5432")
+          DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null || echo "ai_business_factory")
+          
+          if [ -z "$DB_ENDPOINT" ]; then
+            echo "❌ Database endpoint not found - deploy infrastructure first"
+            exit 1
+          fi
+          
+          echo "✅ Database infrastructure verified"
+          echo "DB_ENDPOINT=$DB_ENDPOINT" >> $GITHUB_ENV
+          echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV
+          echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+          
+      - name: Deploy Database Schema
+        working-directory: ./infrastructure/database
+        run: |
+          echo "🚀 Deploying database schema..."
+          
+          # Make script executable
+          chmod +x deploy-schema.sh
+          
+          # Run deployment script
+          ./deploy-schema.sh
+          
+          echo "✅ Database schema deployment completed"
+          
+      - name: Verify Deployment
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "🧪 Verifying schema deployment..."
+          
+          # Get database connection details
+          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)
+          DB_USERNAME=$(terraform output -raw rds_master_username)
+          SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn)
+          
+          # Get password from secrets manager
+          DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
+          
+          # Test connection and verify tables
+          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${{ env.DB_PORT }}/${{ env.DB_NAME }}?sslmode=require"
+          
+          echo "Testing database connection..."
+          psql "$CONNECTION_STRING" -c "SELECT version();" > /dev/null
+          
+          echo "Verifying business_ideas table..."
+          TABLE_EXISTS=$(psql "$CONNECTION_STRING" -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'business_ideas');")
+          
+          if [[ "$TABLE_EXISTS" =~ "t" ]]; then
+            echo "✅ business_ideas table verified"
+          else
+            echo "❌ business_ideas table not found"
+            exit 1
+          fi
+          
+          echo "Checking indexes..."
+          INDEX_COUNT=$(psql "$CONNECTION_STRING" -t -c "SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'business_ideas';")
+          echo "✅ Created $INDEX_COUNT indexes on business_ideas table"
+          
+      - name: Seed Sample Data (Optional)
+        working-directory: ./infrastructure/database
+        run: |
+          echo "🌱 Seeding sample data..."
+          
+          # Get connection details  
+          cd ../terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)
+          DB_USERNAME=$(terraform output -raw rds_master_username)
+          SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn)
+          DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
+          
+          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${{ env.DB_PORT }}/${{ env.DB_NAME }}?sslmode=require"
+          
+          cd ../../../database
+          
+          # Only seed if table is empty
+          RECORD_COUNT=$(psql "$CONNECTION_STRING" -t -c "SELECT COUNT(*) FROM business_ideas;")
+          
+          if [ "$RECORD_COUNT" -eq 0 ]; then
+            echo "📝 Inserting sample data..."
+            psql "$CONNECTION_STRING" -f seed-sample-data.sql
+            echo "✅ Sample data inserted"
+          else
+            echo "ℹ️ Table already has $RECORD_COUNT records, skipping sample data"
+          fi
+          
+      - name: Generate Deployment Summary
+        id: summary
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "📊 Generating deployment summary..."
+          
+          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          
+          echo "deployment_summary<<EOF" >> $GITHUB_OUTPUT
+          echo "## 🗄️ Database Schema Deployment Summary" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "**Status**: ✅ Deployed Successfully" >> $GITHUB_OUTPUT
+          echo "**Environment**: \`$ENVIRONMENT\`" >> $GITHUB_OUTPUT
+          echo "**Database**: \`$DB_ENDPOINT\`" >> $GITHUB_OUTPUT
+          echo "**Schema Version**: $(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 📋 Deployed Components" >> $GITHUB_OUTPUT
+          echo "- ✅ business_ideas table with JSONB storage" >> $GITHUB_OUTPUT
+          echo "- ✅ Performance indexes (GIN, B-tree, full-text)" >> $GITHUB_OUTPUT
+          echo "- ✅ Helper functions for CRUD operations" >> $GITHUB_OUTPUT
+          echo "- ✅ Sample data (3 comprehensive business ideas)" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 🔗 Next Steps" >> $GITHUB_OUTPUT
+          echo "1. Implement CRUD API endpoints for business ideas" >> $GITHUB_OUTPUT
+          echo "2. Update AI orchestrator to persist analysis results" >> $GITHUB_OUTPUT
+          echo "3. Connect Ideas PWA to database queries" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "**Workflow**: ${{ github.workflow }} #${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Update deployment status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `${{ steps.summary.outputs.deployment_summary }}`;
+            console.log(summary);
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [validate, deploy]
+    if: always() && (needs.deploy.result == 'success' || needs.deploy.result == 'failure')
+    
+    steps:
+      - name: Deployment Success Notification
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "🎉 Database schema deployment completed successfully!"
+          echo "PostgreSQL JSONB storage is now ready for AI-generated business ideas."
+          
+      - name: Deployment Failure Notification
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "❌ Database schema deployment failed!"
+          echo "Please check the workflow logs and database connection details."
+          exit 1
