@@ -48,7 +48,7 @@ export class AIService {
       
       // Import and use the real AI orchestrator
       const { createDevelopmentOrchestrator } = await import(
-        '../../../../ai-orchestration/packages/agent-orchestrator/src/orchestration/AgentOrchestrator'
+        '../../../../../ai-orchestration/packages/agent-orchestrator/src/orchestration/AgentOrchestrator'
       );
       
       const orchestrator = createDevelopmentOrchestrator();
@@ -90,7 +90,7 @@ export class AIService {
       
       // Import the real AI orchestrator
       const { createDevelopmentOrchestrator } = await import(
-        '../../../../ai-orchestration/packages/agent-orchestrator/src/orchestration/AgentOrchestrator'
+        '../../../../../ai-orchestration/packages/agent-orchestrator/src/orchestration/AgentOrchestrator'
       );
       
       const orchestrator = createDevelopmentOrchestrator();
