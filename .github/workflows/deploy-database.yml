@@ -88,10 +88,25 @@ jobs:
           echo "🔍 Checking current infrastructure status..."
           terraform init
           
-          # Check if Aurora database exists
+          # Check if Aurora database exists and get clean output
           if terraform output rds_cluster_endpoint &>/dev/null; then
             echo "✅ Aurora PostgreSQL cluster found"
-            echo "DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)" >> $GITHUB_ENV
+            
+            # Get clean terraform outputs without ANSI codes
+            DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null | tr -d '\n\r' | sed 's/[[:space:]]*$//')
+            DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null | tr -d '\n\r' | sed 's/[[:space:]]*$//')
+            DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null | tr -d '\n\r' | sed 's/[[:space:]]*$//')
+            
+            # Validate outputs are not empty
+            if [[ -n "$DB_ENDPOINT" && -n "$DB_PORT" && -n "$DB_NAME" ]]; then
+              echo "DB_ENDPOINT=$DB_ENDPOINT" >> $GITHUB_ENV
+              echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV  
+              echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+              echo "✅ Database connection details saved to environment"
+            else
+              echo "❌ Failed to retrieve database connection details"
+              exit 1
+            fi
           else
             echo "❌ Aurora PostgreSQL cluster not found - infrastructure needs deployment first"
             exit 1
