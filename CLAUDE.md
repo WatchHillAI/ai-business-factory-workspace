@@ -8,6 +8,37 @@ AI Business Factory PWA Workspace - A revolutionary shared monorepo for AI-power
 **Infrastructure**: Complete framework with orchestration, caching, quality assurance
 **Next Phase**: Financial Modeling, Founder Fit, and Risk Assessment agents
 
+## 📊 AI-Assisted Development Timeline Estimation Guide
+
+Based on real-world migration data (11 repos → 1 monorepo completed in 4 hours vs 8-12 day projection):
+
+### **Estimation Formula for AI-Assisted Projects**
+```
+Realistic Estimate = Base Manual Estimate × AI Efficiency Factor × Risk Buffer
+
+Where:
+- AI Efficiency Factor = 0.1-0.2 (10-20% of manual time)
+- Risk Buffer = 1.5-2.0 (50-100% contingency)
+```
+
+### **Example Calculation**
+```
+Manual Estimate: 10 days
+AI-Assisted: 10 × 0.15 × 1.5 = 2.25 days realistic
+Actual Result: Often even faster with good preparation
+```
+
+### **Key Acceleration Factors**
+- **AI Assistance**: 5-10x faster execution
+- **Single Session**: 2-3x faster (no context switching)
+- **Good Preparation**: 2x faster (clear ADRs/docs)
+- **Low Technical Debt**: 3-4x faster
+- **Combined Effect**: 48-72x faster possible!
+
+### **Recommendation**: Present dual timelines
+- **Optimistic** (AI-Assisted): Show realistic AI timeline
+- **Conservative** (Contingency): Traditional estimate for stakeholder comfort
+
 ## Development Server Management
 
 ### 🚀 Starting Development Servers
@@ -40,7 +71,7 @@ cd /Users/cnorton/Development/ai-business-factory-workspace
 npm install
 
 # Start Ideas PWA directly with Vite
-cd apps/idea-cards-pwa
+cd domains/idea-generation/apps/ideas-pwa
 npx vite --port 3002 --host 0.0.0.0 &
 
 # Start BMC PWA directly with Vite
