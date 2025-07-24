@@ -2,6 +2,7 @@
   "name": "ai-business-factory-bmc-pwa",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "AI Business Factory - Business Model Canvas Progressive Web App",
   "scripts": {
     "dev": "vite",

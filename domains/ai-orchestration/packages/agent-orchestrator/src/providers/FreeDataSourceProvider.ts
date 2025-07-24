@@ -72,7 +72,6 @@ export class PyTrendsProvider extends DataSourceProvider {
           source: 'google_trends_unofficial',
           timestamp: new Date().toISOString(),
           cached: false,
-          confidence: 0.85
         }
       };
     } catch (error) {
@@ -139,7 +138,6 @@ export class PyTrendsProvider extends DataSourceProvider {
         source: 'mock_trends',
         timestamp: new Date().toISOString(),
         cached: false,
-        confidence: 0.3
       }
     };
   }
@@ -224,7 +222,7 @@ export class RedditProvider extends DataSourceProvider {
               sort: 'hot',
               limit: 10
             }
-          }).catch(() => ({ data: { data: { children: [] } } }))
+          }).catch(() => ({ data: { data: { children: [] as any[] } } }))
         )
       );
 
@@ -250,7 +248,6 @@ export class RedditProvider extends DataSourceProvider {
           source: 'reddit',
           timestamp: new Date().toISOString(),
           cached: false,
-          sampleSize: allPosts.length
         }
       };
 
@@ -408,7 +405,6 @@ export class HackerNewsProvider extends DataSourceProvider {
           source: 'hackernews',
           timestamp: new Date().toISOString(),
           cached: false,
-          totalHits: response.data.nbHits
         }
       };
 
@@ -583,7 +579,6 @@ export class GitHubProvider extends DataSourceProvider {
           source: 'github',
           timestamp: new Date().toISOString(),
           cached: false,
-          totalCount: repoResponse.data.total_count,
           rateLimit: this.extractGitHubRateLimit(repoResponse.headers)
         }
       };
