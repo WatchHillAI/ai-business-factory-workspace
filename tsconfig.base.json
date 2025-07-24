@@ -15,10 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@ai-business-factory/ui-components": ["packages/ui-components/src/index.ts"],
-      "@ai-business-factory/ai-service": ["packages/ai-service/src/index.ts"],
-      "@ai-business-factory/auth": ["packages/auth/src/index.ts"],
-      "@ai-business-factory/database": ["packages/database/src/index.ts"]
+      "@ai-business-factory/ui-components": ["domains/shared/packages/ui-components/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
