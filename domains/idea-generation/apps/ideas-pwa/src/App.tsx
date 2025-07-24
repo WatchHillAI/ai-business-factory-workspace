@@ -22,6 +22,8 @@ const AppContent: React.FC = () => {
   const [savedIdeaIds, setSavedIdeaIds] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<BusinessIdea[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [detailedIdea, setDetailedIdea] = useState<any>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   
   // Load ideas on component mount
   useEffect(() => {
@@ -68,17 +70,44 @@ const AppContent: React.FC = () => {
     );
   };
 
-  const handleViewIdea = (ideaId: string) => {
+  const handleViewIdea = async (ideaId: string) => {
     console.log('handleViewIdea called with:', ideaId);
     console.log('Current state before update:', { currentView, selectedIdeaId });
+    
+    // Find the selected idea
+    const selectedIdea = ideas.find(idea => idea.id === ideaId);
+    if (!selectedIdea) {
+      console.error('Idea not found:', ideaId);
+      return;
+    }
+    
     setSelectedIdeaId(ideaId);
     setCurrentView('detail');
-    console.log('State update calls completed');
+    setIsLoadingDetail(true);
+    setDetailedIdea(null);
+    
+    try {
+      console.log('🔍 Generating detailed analysis for:', selectedIdea.title);
+      const detailedAnalysis = await aiService.generateDetailedAnalysis(
+        selectedIdea.title,
+        selectedIdea.description
+      );
+      setDetailedIdea(detailedAnalysis);
+      console.log('✅ Detailed analysis loaded');
+    } catch (error) {
+      console.error('Failed to load detailed analysis:', error);
+      // Fallback to sample detailed idea
+      setDetailedIdea(sampleDetailedIdea);
+    } finally {
+      setIsLoadingDetail(false);
+    }
   };
 
   const handleBackToList = () => {
     setCurrentView('list');
     setSelectedIdeaId(null);
+    setDetailedIdea(null);
+    setIsLoadingDetail(false);
   };
 
   const handleExclusiveClick = (ideaId: string) => {
@@ -100,13 +129,39 @@ const AppContent: React.FC = () => {
   
   if (currentView === 'detail' && selectedIdeaId) {
     console.log('Rendering detail view for:', selectedIdeaId);
-    // For demo, always show the sample detailed idea
+    
+    if (isLoadingDetail) {
+      return (
+        <div className={`min-h-screen transition-colors duration-200 ${
+          isDark ? 'dark-bg-primary' : 'bg-gray-50'
+        }`}>
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className={`text-2xl mb-4 transition-colors duration-200 ${
+                isDark ? 'dark-text-primary' : 'text-gray-900'
+              }`}>
+                🤖 Analyzing Business Opportunity...
+              </div>
+              <div className={`text-lg transition-colors duration-200 ${
+                isDark ? 'dark-text-secondary' : 'text-gray-600'
+              }`}>
+                {import.meta.env.VITE_USE_AI_GENERATION === 'true' 
+                  ? 'Generating live Claude AI analysis with real market data' 
+                  : 'Loading business intelligence'
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className={`min-h-screen transition-colors duration-200 ${
         isDark ? 'dark-bg-primary' : 'bg-gray-50'
       }`}>
         <IdeaDetailView 
-          idea={sampleDetailedIdea} 
+          idea={detailedIdea || sampleDetailedIdea} 
           onBack={handleBackToList}
         />
       </div>

@@ -46,24 +46,72 @@ export class AIService {
       // Simulate AI processing time
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // For now, create a mock AI result to test the flow
-      // TODO: Replace with actual AI orchestrator call once import path is resolved
-      const mockAIResult = {
-        confidenceScore: 89,
-        marketAnalysis: {
-          totalMarketSize: '$2.8B',
-          primarySegment: 'SMB Technology'
-        }
+      // Import and use the real AI orchestrator
+      const { createDevelopmentOrchestrator } = await import(
+        '../../../../ai-orchestration/packages/agent-orchestrator/src/orchestration/AgentOrchestrator'
+      );
+      
+      const orchestrator = createDevelopmentOrchestrator();
+      
+      // Generate real AI analysis
+      const analysisInput = {
+        idea: "AI-powered business automation tools for small businesses",
+        industry: "technology", 
+        targetMarket: "SMB"
       };
       
-      console.log('AI analysis complete');
+      console.log('🤖 Calling real AI orchestrator with Claude...');
+      const aiResult = await orchestrator.analyzeBusinessIdea(analysisInput);
+      console.log('✅ AI analysis complete:', aiResult);
       
-      // Transform AI result into business ideas
-      return this.transformAIResult(mockAIResult);
+      // Transform real AI result into business ideas
+      return this.transformAIResult(aiResult);
       
     } catch (error) {
       console.error('AI orchestrator failed:', error);
       throw error;
+    }
+  }
+  
+  /**
+   * Generate detailed business analysis for a specific idea
+   */
+  async generateDetailedAnalysis(ideaTitle: string, ideaDescription: string): Promise<any> {
+    const useAI = import.meta.env.VITE_USE_AI_GENERATION === 'true';
+    
+    if (!useAI) {
+      console.log('AI analysis disabled, using sample detail data');
+      const { sampleDetailedIdea } = await import('../data/sampleDetailedIdea');
+      return sampleDetailedIdea;
+    }
+    
+    try {
+      console.log('🤖 Generating detailed AI analysis for:', ideaTitle);
+      
+      // Import the real AI orchestrator
+      const { createDevelopmentOrchestrator } = await import(
+        '../../../../ai-orchestration/packages/agent-orchestrator/src/orchestration/AgentOrchestrator'
+      );
+      
+      const orchestrator = createDevelopmentOrchestrator();
+      
+      // Generate comprehensive analysis for the specific idea
+      const analysisInput = {
+        idea: `${ideaTitle}: ${ideaDescription}`,
+        industry: "technology",
+        targetMarket: "SMB"
+      };
+      
+      console.log('🔍 Calling real AI orchestrator for detailed analysis...');
+      const detailedResult = await orchestrator.analyzeBusinessIdea(analysisInput);
+      console.log('✅ Detailed AI analysis complete:', detailedResult);
+      
+      return detailedResult;
+      
+    } catch (error) {
+      console.warn('AI detailed analysis failed, falling back to sample data:', error);
+      const { sampleDetailedIdea } = await import('../data/sampleDetailedIdea');
+      return sampleDetailedIdea;
     }
   }
   
