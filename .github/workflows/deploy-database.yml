@@ -118,7 +118,7 @@ jobs:
           echo "📋 Database Schema Deployment Plan" > deployment-plan.md
           echo "=================================" >> deployment-plan.md
           echo "" >> deployment-plan.md
-          echo "**Database Endpoint**: ${{ env.DB_ENDPOINT }}" >> deployment-plan.md
+          echo "**Database Endpoint**: $DB_ENDPOINT" >> deployment-plan.md
           echo "**Environment**: dev" >> deployment-plan.md
           echo "**Schema Version**: $(date +%Y%m%d-%H%M%S)" >> deployment-plan.md
           echo "" >> deployment-plan.md
@@ -242,7 +242,7 @@ jobs:
           DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
           
           # Test connection and verify tables
-          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${{ env.DB_PORT }}/${{ env.DB_NAME }}?sslmode=require"
+          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${DB_PORT}/${DB_NAME}?sslmode=require"
           
           echo "Testing database connection..."
           psql "$CONNECTION_STRING" -c "SELECT version();" > /dev/null
@@ -273,7 +273,7 @@ jobs:
           SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn)
           DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
           
-          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${{ env.DB_PORT }}/${{ env.DB_NAME }}?sslmode=require"
+          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${DB_PORT}/${DB_NAME}?sslmode=require"
           
           cd ../../../database
           
