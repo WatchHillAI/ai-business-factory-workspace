@@ -1,0 +1,124 @@
+name: Deploy Database Schema (Temporary with Access Keys)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: us-east-1
+  TERRAFORM_VERSION: '1.5.0'
+
+jobs:
+  deploy:
+    name: Deploy Database Schema with Access Keys
+    runs-on: ubuntu-latest
+    
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+          
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+          
+      - name: Configure AWS credentials (Temporary - Access Keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Verify AWS Access
+        run: |
+          echo "🔍 Verifying AWS access..."
+          aws sts get-caller-identity
+          echo "✅ AWS credentials configured successfully"
+          
+      - name: Deploy OIDC Infrastructure First
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "🚀 Deploying OIDC infrastructure for future GitHub Actions..."
+          terraform init
+          
+          # Apply just the OIDC module first
+          terraform apply -target=module.github_oidc -auto-approve
+          
+          # Get the role ARN for future use
+          ROLE_ARN=$(terraform output -raw github_actions_role_arn)
+          echo "✅ OIDC Role created: $ROLE_ARN"
+          echo "📝 Add this as AWS_GITHUB_ACTIONS_ROLE_ARN repository variable"
+          
+      - name: Deploy Full Infrastructure
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "🚀 Deploying full infrastructure..."
+          terraform apply -auto-approve
+          
+      - name: Verify Infrastructure
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "🔍 Verifying infrastructure is ready..."
+          
+          # Get database connection details
+          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null || echo "")
+          DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null || echo "5432")
+          DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null || echo "ai_business_factory")
+          
+          if [ -z "$DB_ENDPOINT" ]; then
+            echo "❌ Database endpoint not found - deploy infrastructure first"
+            exit 1
+          fi
+          
+          echo "✅ Database infrastructure verified"
+          echo "DB_ENDPOINT=$DB_ENDPOINT" >> $GITHUB_ENV
+          echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV
+          echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+          
+      - name: Deploy Database Schema
+        working-directory: ./infrastructure/database
+        run: |
+          echo "🚀 Deploying database schema..."
+          
+          # Make script executable
+          chmod +x deploy-schema.sh
+          
+          # Run deployment script
+          ./deploy-schema.sh
+          
+          echo "✅ Database schema deployment completed"
+          
+      - name: Output Next Steps
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "📋 IMPORTANT NEXT STEPS:"
+          echo "========================"
+          echo ""
+          echo "1. Add the following as a GitHub repository variable:"
+          echo "   Name: AWS_GITHUB_ACTIONS_ROLE_ARN"
+          echo "   Value: $(terraform output -raw github_actions_role_arn)"
+          echo ""
+          echo "2. Once added, future deployments will use OIDC (no access keys needed)"
+          echo ""
+          echo "3. After verifying OIDC works, remove these secrets:"
+          echo "   - AWS_ACCESS_KEY_ID"
+          echo "   - AWS_SECRET_ACCESS_KEY"
+          echo ""
+          echo "4. Delete this temporary workflow file"
