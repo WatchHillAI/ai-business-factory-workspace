@@ -216,6 +216,12 @@ const AppContent: React.FC = () => {
           }`}>
             Browse curated opportunities, see what's trending, and find ideas that match your skills and interests.
           </p>
+          <div className={`text-sm mt-2 px-4 py-2 rounded transition-colors duration-200 ${
+            isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+          }`}>
+            🔧 ENV DEBUG: VITE_USE_AI_GENERATION = {import.meta.env.VITE_USE_AI_GENERATION || 'undefined'} | 
+            Ideas Count: {ideas.length}
+          </div>
         </div>
         
         {/* Idea Cards Grid */}
@@ -224,7 +230,7 @@ const AppContent: React.FC = () => {
             <div className={`text-lg transition-colors duration-200 ${
               isDark ? 'dark-text-secondary' : 'text-gray-600'
             }`}>
-              🤖 Generating AI-powered business ideas...
+              🚀 Loading AI Business Opportunities... (LIVE)
             </div>
             <div className={`text-sm mt-2 transition-colors duration-200 ${
               isDark ? 'dark-text-tertiary' : 'text-gray-500'

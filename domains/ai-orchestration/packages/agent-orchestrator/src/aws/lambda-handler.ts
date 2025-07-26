@@ -120,10 +120,7 @@ export const handler = async (
     };
 
   } catch (error) {
-    logger.error('Lambda execution failed', { 
-      error: error instanceof Error ? error.message : error,
-      requestId 
-    });
+    logger.error(`Lambda execution failed: ${error instanceof Error ? error.message : String(error)} (RequestId: ${requestId})`);
 
     return {
       statusCode: 500,
@@ -247,15 +244,15 @@ async function handleComprehensiveAnalysis(
           timeline: [] as any[]
         },
         investment: {
-          totalRequired: null,
+          totalRequired: null as any,
           stages: [] as any[],
           useOfFunds: [] as any[]
         }
       },
 
       strategy: {
-        goToMarket: null,
-        competitive: result.marketResearch?.data?.competitiveIntelligence?.differentiationOpportunities || [],
+        goToMarket: null as any,
+        competitive: (result.marketResearch?.data as any)?.competitiveIntelligence?.differentiationOpportunities || [],
         partnerships: [] as any[],
         scalability: result.financialModeling?.data?.scenarios?.optimistic || null
       },
@@ -286,7 +283,7 @@ async function handleComprehensiveAnalysis(
     };
 
   } catch (error) {
-    logger.error('Comprehensive analysis failed', { error });
+    logger.error(`Comprehensive analysis failed: ${error instanceof Error ? error.message : String(error)}`);
     
     return {
       statusCode: 500,
@@ -355,7 +352,7 @@ async function handleMarketAnalysis(
     };
 
   } catch (error) {
-    logger.error('Market analysis failed', { error });
+    logger.error(`Market analysis failed: ${error instanceof Error ? error.message : String(error)}`);
     
     return {
       statusCode: 500,
@@ -406,7 +403,7 @@ async function handleHealthCheck(
       headers: corsHeaders,
       body: JSON.stringify({
         status: 'unhealthy',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       })
     };
@@ -480,14 +477,11 @@ export const graphqlResolver = async (event: any, context: Context) => {
     throw new Error(`Unknown GraphQL field: ${event.info?.fieldName}`);
 
   } catch (error) {
-    logger.error('GraphQL resolver failed', { 
-      error: error instanceof Error ? error.message : error,
-      requestId: context.awsRequestId
-    });
+    logger.error(`GraphQL resolver failed: ${error instanceof Error ? error.message : String(error)} (RequestId: ${context.awsRequestId})`);
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 };

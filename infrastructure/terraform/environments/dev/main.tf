@@ -465,7 +465,7 @@ module "postgresql_cluster" {
   database_name      = "ai_business_factory"
   master_username    = "postgres"
   
-  # Serverless configuration for dev
+  # Serverless v2 configuration for dev
   min_capacity = 0.5
   max_capacity = 1
   auto_pause   = true

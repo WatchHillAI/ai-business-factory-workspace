@@ -225,20 +225,17 @@ data "aws_db_subnet_group" "existing" {
 resource "aws_rds_cluster" "postgresql" {
   cluster_identifier = var.cluster_identifier
   engine             = "aurora-postgresql"
-  engine_mode        = "serverless"
+  engine_mode        = "provisioned"
   engine_version     = var.engine_version
   
   database_name   = var.database_name
   master_username = var.master_username
   master_password = var.master_password != null ? var.master_password : random_password.master_password[0].result
   
-  # Serverless scaling configuration
-  scaling_configuration {
-    auto_pause               = var.auto_pause
-    max_capacity            = var.max_capacity
-    min_capacity            = var.min_capacity
-    seconds_until_auto_pause = var.seconds_until_auto_pause
-    timeout_action          = var.timeout_action
+  # Serverless v2 scaling configuration
+  serverlessv2_scaling_configuration {
+    max_capacity = var.max_capacity
+    min_capacity = var.min_capacity
   }
 
   # Network configuration
@@ -273,6 +270,21 @@ resource "aws_rds_cluster" "postgresql" {
       final_snapshot_identifier
     ]
   }
+}
+
+# Aurora Serverless v2 instances
+resource "aws_rds_cluster_instance" "postgresql" {
+  count              = 1  # Single instance for dev
+  identifier         = "${var.cluster_identifier}-${count.index}"
+  cluster_identifier = aws_rds_cluster.postgresql.id
+  instance_class     = "db.serverless"
+  engine             = aws_rds_cluster.postgresql.engine
+  engine_version     = aws_rds_cluster.postgresql.engine_version
+  
+  performance_insights_enabled = var.environment == "prod"
+  monitoring_interval          = var.environment == "prod" ? 60 : 0
+  
+  tags = var.tags
 }
 
 # CloudWatch Log Groups for enhanced monitoring
