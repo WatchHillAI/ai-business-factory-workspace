@@ -194,11 +194,28 @@ jobs:
           role-session-name: GitHubActions-DatabaseDeployment
           aws-region: ${{ env.AWS_REGION }}
           
+      - name: Deploy Infrastructure if Missing
+        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        run: |
+          echo "🔍 Checking and deploying infrastructure as needed..."
+          terraform init
+          
+          # Check if Aurora database exists
+          if ! terraform output rds_cluster_endpoint &>/dev/null; then
+            echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
+            
+            # Deploy infrastructure with auto-approve
+            terraform apply -auto-approve
+            
+            echo "✅ Infrastructure deployment completed"
+          else
+            echo "✅ Aurora PostgreSQL infrastructure already exists"
+          fi
+          
       - name: Verify Infrastructure
         working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
         run: |
           echo "🔍 Verifying infrastructure is ready..."
-          terraform init
           
           # Get database connection details
           DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null || echo "")
@@ -206,7 +223,7 @@ jobs:
           DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null || echo "ai_business_factory")
           
           if [ -z "$DB_ENDPOINT" ]; then
-            echo "❌ Database endpoint not found - deploy infrastructure first"
+            echo "❌ Database endpoint not found after deployment"
             exit 1
           fi
           
