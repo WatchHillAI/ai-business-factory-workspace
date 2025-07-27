@@ -196,16 +196,19 @@ jobs:
           
       - name: Deploy Infrastructure if Missing
         working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+        env:
+          TF_IN_AUTOMATION: true
+          TF_CLI_ARGS: "-no-color"
         run: |
           echo "🔍 Checking and deploying infrastructure as needed..."
-          terraform init
+          terraform init -no-color
           
           # Check if Aurora database exists
-          if ! terraform output rds_cluster_endpoint &>/dev/null; then
+          if ! terraform output -raw rds_cluster_endpoint &>/dev/null; then
             echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
             
             # Deploy infrastructure with auto-approve
-            terraform apply -auto-approve
+            terraform apply -auto-approve -no-color
             
             echo "✅ Infrastructure deployment completed"
           else
@@ -217,10 +220,10 @@ jobs:
         run: |
           echo "🔍 Verifying infrastructure is ready..."
           
-          # Get database connection details
-          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null || echo "")
-          DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null || echo "5432")
-          DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null || echo "ai_business_factory")
+          # Get database connection details with ANSI codes stripped
+          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "")
+          DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "5432")
+          DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "ai_business_factory")
           
           if [ -z "$DB_ENDPOINT" ]; then
             echo "❌ Database endpoint not found after deployment"
