@@ -64,24 +64,74 @@ resource "aws_iam_policy" "database_deployment" {
       {
         Effect = "Allow"
         Action = [
-          # RDS permissions
+          # RDS permissions for Aurora cluster management
+          "rds:CreateDBCluster",
+          "rds:CreateDBInstance",
+          "rds:CreateDBSubnetGroup",
+          "rds:CreateDBClusterParameterGroup",
           "rds:DescribeDBClusters",
           "rds:DescribeDBInstances",
           "rds:DescribeDBSubnetGroups",
           "rds:DescribeDBClusterParameters",
-          "rds:DescribeDBParameterGroups"
+          "rds:DescribeDBParameterGroups",
+          "rds:ModifyDBCluster",
+          "rds:ModifyDBInstance",
+          "rds:DeleteDBCluster",
+          "rds:DeleteDBInstance",
+          "rds:AddTagsToResource",
+          "rds:ListTagsForResource"
         ]
         Resource = "*"
       },
       {
         Effect = "Allow"
         Action = [
-          # Secrets Manager permissions
+          # Secrets Manager permissions for database credentials
+          "secretsmanager:CreateSecret",
           "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret"
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:DeleteSecret",
+          "secretsmanager:TagResource"
         ]
         Resource = [
           "arn:aws:secretsmanager:${var.aws_region}:*:secret:${var.project_name}-*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          # EC2 permissions for VPC, security groups, and subnets
+          "ec2:CreateSecurityGroup",
+          "ec2:DeleteSecurityGroup",
+          "ec2:DescribeSecurityGroups",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress",
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeAvailabilityZones",
+          "ec2:CreateTags",
+          "ec2:DescribeTags"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          # CloudWatch Logs permissions for Aurora logging
+          "logs:CreateLogGroup",
+          "logs:DeleteLogGroup",
+          "logs:DescribeLogGroups",
+          "logs:PutRetentionPolicy",
+          "logs:CreateLogStream",
+          "logs:DeleteLogStream",
+          "logs:TagLogGroup"
+        ]
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:*:log-group:/aws/rds/cluster/${var.project_name}-*"
         ]
       },
       {
