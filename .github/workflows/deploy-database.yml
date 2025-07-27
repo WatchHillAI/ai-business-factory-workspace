@@ -209,8 +209,8 @@ jobs:
           if [[ "$DB_CHECK" == *"No outputs found"* ]] || [[ "$DB_CHECK" == *"Warning:"* ]] || [[ -z "$DB_CHECK" ]]; then
             echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
             
-            # Deploy infrastructure with auto-approve
-            terraform apply -auto-approve -no-color
+            # Deploy ONLY PostgreSQL infrastructure with auto-approve
+            terraform apply -target=module.postgresql_cluster -auto-approve -no-color
             
             echo "✅ Infrastructure deployment completed"
           else
