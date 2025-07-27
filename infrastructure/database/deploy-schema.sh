@@ -42,21 +42,25 @@ fi
 
 log_info "Deploying Business Ideas Schema to Aurora PostgreSQL..."
 
-# Get database connection details from Terraform outputs
-cd "$TERRAFORM_DIR"
-
-if [[ ! -f "terraform.tfstate" ]]; then
-    log_error "Terraform state not found. Run 'terraform apply' first."
-    exit 1
+# Get database connection details from environment or Terraform
+if [[ -n "$DB_ENDPOINT" && -n "$DB_PORT" && -n "$DB_NAME" ]]; then
+    log_info "Using database connection details from environment variables..."
+    DB_USERNAME="${DB_USERNAME:-postgres}"
+else
+    log_info "Extracting database connection details from Terraform..."
+    cd "$TERRAFORM_DIR"
+    
+    if [[ ! -f "terraform.tfstate" ]]; then
+        log_error "Terraform state not found. Run 'terraform apply' first."
+        exit 1
+    fi
+    
+    # Extract database connection details using terraform output
+    DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null || echo "")
+    DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null || echo "5432")
+    DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null || echo "ai_business_factory")
+    DB_USERNAME=$(terraform output -raw rds_master_username 2>/dev/null || echo "postgres")
 fi
-
-log_info "Extracting database connection details from Terraform..."
-
-# Extract database connection details using terraform output
-DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null || echo "")
-DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null || echo "5432")
-DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null || echo "ai_business_factory")
-DB_USERNAME=$(terraform output -raw rds_master_username 2>/dev/null || echo "postgres")
 
 if [[ -z "$DB_ENDPOINT" ]]; then
     log_error "Could not extract database endpoint from Terraform output"
@@ -78,11 +82,17 @@ fi
 
 # Get database password from AWS Secrets Manager
 log_info "Retrieving database password from AWS Secrets Manager..."
-SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn 2>/dev/null || echo "")
 
-if [[ -z "$SECRET_ARN" ]]; then
-    log_error "Could not find database password secret ARN"
-    exit 1
+# Use environment variable or get from terraform
+if [[ -n "$SECRET_ARN" ]]; then
+    log_info "Using secret ARN from environment variable..."
+else
+    SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn 2>/dev/null || echo "")
+    
+    if [[ -z "$SECRET_ARN" ]]; then
+        log_error "Could not find database password secret ARN"
+        exit 1
+    fi
 fi
 
 DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)

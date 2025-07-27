@@ -204,7 +204,9 @@ jobs:
           terraform init -no-color
           
           # Check if Aurora database exists
-          if ! terraform output -raw rds_cluster_endpoint &>/dev/null; then
+          DB_CHECK=$(terraform output -raw rds_cluster_endpoint 2>&1 || true)
+          
+          if [[ "$DB_CHECK" == *"No outputs found"* ]] || [[ "$DB_CHECK" == *"Warning:"* ]] || [[ -z "$DB_CHECK" ]]; then
             echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
             
             # Deploy infrastructure with auto-approve
@@ -213,6 +215,7 @@ jobs:
             echo "✅ Infrastructure deployment completed"
           else
             echo "✅ Aurora PostgreSQL infrastructure already exists"
+            echo "Endpoint: $DB_CHECK"
           fi
           
       - name: Verify Infrastructure
@@ -235,10 +238,27 @@ jobs:
           echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV
           echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
           
+          # Also get username for schema deployment
+          DB_USERNAME=$(terraform output -raw rds_master_username 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "postgres")
+          echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
+          
       - name: Deploy Database Schema
         working-directory: ./infrastructure/database
+        env:
+          DB_ENDPOINT: ${{ env.DB_ENDPOINT }}
+          DB_PORT: ${{ env.DB_PORT }}
+          DB_NAME: ${{ env.DB_NAME }}
+          DB_USERNAME: ${{ env.DB_USERNAME }}
+          SECRET_ARN: ${{ env.SECRET_ARN }}
         run: |
           echo "🚀 Deploying database schema..."
+          
+          # Get secret ARN from terraform
+          cd ../terraform/environments/${{ github.event.inputs.environment || 'dev' }}
+          SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r')
+          export SECRET_ARN
+          
+          cd ../../../database
           
           # Make script executable
           chmod +x deploy-schema.sh
