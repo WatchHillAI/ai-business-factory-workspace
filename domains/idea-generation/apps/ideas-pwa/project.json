@@ -40,6 +40,13 @@
         "jestConfig": "domains/idea-generation/apps/ideas-pwa/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "domains/idea-generation/apps/ideas-pwa"
+      }
     }
   },
   "tags": ["scope:app", "type:app"]

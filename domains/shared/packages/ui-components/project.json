@@ -21,6 +21,13 @@
         "jestConfig": "domains/shared/packages/ui-components/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "domains/shared/packages/ui-components"
+      }
     }
   },
   "tags": ["scope:shared", "type:ui"]

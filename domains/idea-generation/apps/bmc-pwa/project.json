@@ -44,6 +44,13 @@
       "options": {
         "jestConfig": "domains/idea-generation/apps/bmc-pwa/jest.config.ts"
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "domains/idea-generation/apps/bmc-pwa"
+      }
     }
   },
   "tags": ["pwa", "bmc"]

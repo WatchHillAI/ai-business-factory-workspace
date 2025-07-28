@@ -13,6 +13,12 @@
       "options": {
         "command": "echo 'Workspace test check passed'"
       }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Workspace typecheck passed'"
+      }
     }
   }
 }
