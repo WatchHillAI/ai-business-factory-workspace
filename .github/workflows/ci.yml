@@ -62,7 +62,7 @@ jobs:
       - name: Check affected build outputs
         run: |
           # Get list of affected projects
-          affected_projects=$(npx nx print-affected --base=origin/main --head=HEAD --select=projects --type=app | tr ',' ' ')
+          affected_projects=$(npx nx show projects --affected --base=origin/main --head=HEAD --type=app | tr '\n' ' ')
           
           if [ -z "$affected_projects" ]; then
             echo "✅ No affected applications to verify"
