@@ -7,9 +7,14 @@
     "default": {
       "runner": "nx/tasks-runners/default",
       "options": {
-        "cacheableOperations": ["build", "test", "lint"]
+        "cacheableOperations": ["build", "test", "lint", "typecheck"],
+        "parallel": 3,
+        "maxParallel": 3
       }
     }
+  },
+  "affected": {
+    "defaultBase": "main"
   },
   "defaultProject": "idea-cards-pwa"
 }

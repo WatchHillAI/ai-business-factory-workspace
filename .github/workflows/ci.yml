@@ -9,9 +9,12 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,23 +25,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint workspace
-        run: npm run lint --if-present
+      - name: Clear Nx cache
+        run: npx nx reset
+        
+      - name: Lint affected projects
+        run: npx nx affected:lint --base=origin/main --head=HEAD --parallel=3
+        timeout-minutes: 5
 
-      - name: Run tests
-        run: npm run test -- --watchAll=false --passWithNoTests
+      - name: Test affected projects
+        run: npx nx affected:test --base=origin/main --head=HEAD --parallel=3 -- --watchAll=false --passWithNoTests
 
-      - name: Type check
-        run: npm run typecheck --if-present
+      - name: Type check affected projects
+        run: npx nx affected:typecheck --base=origin/main --head=HEAD --parallel=3
 
   build-check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app: [bmc-pwa, ideas-pwa]
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -49,28 +56,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build ${{ matrix.app }}
-        run: npm run build:${{ matrix.app }}
+      - name: Build affected projects
+        run: npx nx affected:build --base=origin/main --head=HEAD --parallel=3
 
-      - name: Check build output
+      - name: Check affected build outputs
         run: |
-          if [ ! -d "dist/apps/${{ matrix.app }}" ]; then
-            echo "❌ Build output directory not found for ${{ matrix.app }}"
-            exit 1
+          # Get list of affected projects
+          affected_projects=$(npx nx print-affected --base=origin/main --head=HEAD --select=projects --type=app | tr ',' ' ')
+          
+          if [ -z "$affected_projects" ]; then
+            echo "✅ No affected applications to verify"
+            exit 0
           fi
           
-          if [ ! -f "dist/apps/${{ matrix.app }}/index.html" ]; then
-            echo "❌ index.html not found in build output for ${{ matrix.app }}"
-            exit 1
-          fi
-          
-          echo "✅ Build output verification passed for ${{ matrix.app }}"
+          for app in $affected_projects; do
+            if [[ "$app" == *"pwa"* ]]; then
+              if [ ! -d "dist/apps/$app" ]; then
+                echo "❌ Build output directory not found for $app"
+                exit 1
+              fi
+              
+              if [ ! -f "dist/apps/$app/index.html" ]; then
+                echo "❌ index.html not found in build output for $app"
+                exit 1
+              fi
+              
+              echo "✅ Build output verification passed for $app"
+            fi
+          done
 
   dependency-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

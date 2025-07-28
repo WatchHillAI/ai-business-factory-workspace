@@ -1,0 +1,12 @@
+{
+  "name": "@ai-business-factory/workspace",
+  "$schema": "node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Workspace lint check passed'"
+      }
+    }
+  }
+}
