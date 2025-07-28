@@ -7,6 +7,12 @@
       "options": {
         "command": "echo 'Workspace lint check passed'"
       }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Workspace test check passed'"
+      }
     }
   }
 }
