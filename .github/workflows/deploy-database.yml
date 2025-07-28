@@ -203,49 +203,46 @@ jobs:
           echo "🔍 Checking and deploying infrastructure as needed..."
           terraform init -no-color
           
-          # Check if Aurora database exists (both in Terraform state and AWS)
-          DB_CHECK=$(terraform output -raw rds_cluster_endpoint 2>&1 || true)
-          
-          # Also check if cluster exists in AWS directly
+          # First check if cluster exists in AWS directly (bypass Terraform state issues)
+          echo "🔍 Checking if Aurora cluster exists in AWS..."
           CLUSTER_EXISTS=$(aws rds describe-db-clusters --db-cluster-identifier ai-business-factory-db-dev --query 'DBClusters[0].Endpoint' --output text 2>/dev/null || echo "None")
           
-          if [[ "$DB_CHECK" == *"No outputs found"* ]] || [[ "$DB_CHECK" == *"Warning:"* ]] || [[ -z "$DB_CHECK" ]]; then
-            if [[ "$CLUSTER_EXISTS" != "None" ]]; then
-              echo "✅ Aurora cluster exists in AWS but not in Terraform state"
-              echo "📝 Cluster endpoint from AWS: $CLUSTER_EXISTS"  
-              echo "🚀 Skipping infrastructure deployment, proceeding to schema deployment..."
-            else
-              echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
-              
-              # Handle potential resource conflicts with existing AWS resources
-              echo "🔧 Checking for existing resources and handling state drift..."
-              
-              # Try deployment, capture exit code
-              set +e  # Disable exit on error temporarily
-              terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
-              DEPLOY_RESULT=$?
-              set -e  # Re-enable exit on error
-              
-              # If deployment fails due to existing resources, try to import them
-              if [ $DEPLOY_RESULT -ne 0 ]; then
-                echo "⚠️ Deployment failed, likely due to existing resources. Attempting to import..."
-                
-                # Try to import existing resources (ignore failures)
-                terraform import module.postgresql_cluster.aws_secretsmanager_secret.db_credentials "arn:aws:secretsmanager:us-east-1:519284856023:secret:ai-business-factory-db-dev-credentials-iFQoGn" 2>/dev/null || echo "  - Secret import failed or already exists"
-                terraform import module.postgresql_cluster.aws_db_subnet_group.default[0] "ai-business-factory-db-dev-subnet-group" 2>/dev/null || echo "  - Subnet group import failed or already exists"
-                terraform import module.postgresql_cluster.aws_security_group.rds[0] "sg-089fe5cc28dc8d927" 2>/dev/null || echo "  - Security group import failed or already exists"  
-                terraform import module.postgresql_cluster.aws_cloudwatch_log_group.postgresql "/aws/rds/cluster/ai-business-factory-db-dev/postgresql" 2>/dev/null || echo "  - Log group import failed or already exists"
-                
-                echo "🔄 Retrying deployment after import..."
-                # Retry deployment after import
-                terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
-              fi
-              
-              echo "✅ Infrastructure deployment completed"
-            fi
+          if [[ "$CLUSTER_EXISTS" != "None" && "$CLUSTER_EXISTS" != "null" ]]; then
+            echo "✅ Aurora cluster exists in AWS: $CLUSTER_EXISTS"
+            echo "🚀 Skipping infrastructure deployment, proceeding to schema deployment..."
+            echo "SKIP_INFRASTRUCTURE=true" >> $GITHUB_ENV
           else
-            echo "✅ Aurora PostgreSQL infrastructure already exists"
-            echo "Endpoint: $DB_CHECK"
+            echo "⚠️ Aurora PostgreSQL infrastructure not found - will deploy now..."
+            echo "SKIP_INFRASTRUCTURE=false" >> $GITHUB_ENV
+            
+            # Check Terraform state as secondary verification
+            DB_CHECK=$(terraform output -raw rds_cluster_endpoint 2>&1 || true)
+            if [[ "$DB_CHECK" != *"No outputs found"* ]] && [[ -n "$DB_CHECK" ]]; then
+              echo "⚠️ Cluster exists in Terraform state but not in AWS - state inconsistency detected"
+            fi
+            
+            # Try deployment, capture exit code
+            set +e  # Disable exit on error temporarily
+            terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
+            DEPLOY_RESULT=$?
+            set -e  # Re-enable exit on error
+            
+            # If deployment fails due to existing resources, try to import them
+            if [ $DEPLOY_RESULT -ne 0 ]; then
+              echo "⚠️ Deployment failed, likely due to existing resources. Attempting to import..."
+              
+              # Try to import existing resources (ignore failures)
+              terraform import module.postgresql_cluster.aws_secretsmanager_secret.db_credentials "arn:aws:secretsmanager:us-east-1:519284856023:secret:ai-business-factory-db-dev-credentials-iFQoGn" 2>/dev/null || echo "  - Secret import failed or already exists"
+              terraform import module.postgresql_cluster.aws_db_subnet_group.default[0] "ai-business-factory-db-dev-subnet-group" 2>/dev/null || echo "  - Subnet group import failed or already exists"
+              terraform import module.postgresql_cluster.aws_security_group.rds[0] "sg-089fe5cc28dc8d927" 2>/dev/null || echo "  - Security group import failed or already exists"  
+              terraform import module.postgresql_cluster.aws_cloudwatch_log_group.postgresql "/aws/rds/cluster/ai-business-factory-db-dev/postgresql" 2>/dev/null || echo "  - Log group import failed or already exists"
+              
+              echo "🔄 Retrying deployment after import..."
+              # Retry deployment after import
+              terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
+            fi
+            
+            echo "✅ Infrastructure deployment completed"
           fi
           
       - name: Verify Infrastructure
@@ -253,13 +250,32 @@ jobs:
         run: |
           echo "🔍 Verifying infrastructure is ready..."
           
-          # Get database connection details with ANSI codes stripped
-          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "")
-          DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "5432")
-          DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "ai_business_factory")
+          if [[ "$SKIP_INFRASTRUCTURE" == "true" ]]; then
+            echo "ℹ️ Infrastructure deployment was skipped, getting connection details from AWS directly..."
+            
+            # Get cluster details directly from AWS
+            CLUSTER_DATA=$(aws rds describe-db-clusters --db-cluster-identifier ai-business-factory-db-dev --output json)
+            DB_ENDPOINT=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].Endpoint')
+            DB_PORT=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].Port // 5432')
+            DB_NAME=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].DatabaseName // "ai_business_factory"')
+            DB_USERNAME=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].MasterUsername // "postgres"')
+            
+            # Get secret ARN for password retrieval
+            SECRET_ARN=$(aws secretsmanager list-secrets --filters Key=name,Values=ai-business-factory-db-dev-credentials --query 'SecretList[0].ARN' --output text)
+            
+          else
+            echo "ℹ️ Getting connection details from Terraform state..."
+            
+            # Get database connection details with ANSI codes stripped
+            DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "")
+            DB_PORT=$(terraform output -raw rds_cluster_port 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "5432")
+            DB_NAME=$(terraform output -raw rds_database_name 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "ai_business_factory")
+            DB_USERNAME=$(terraform output -raw rds_master_username 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "postgres")
+            SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r')
+          fi
           
-          if [ -z "$DB_ENDPOINT" ]; then
-            echo "❌ Database endpoint not found after deployment"
+          if [ -z "$DB_ENDPOINT" ] || [ "$DB_ENDPOINT" == "null" ]; then
+            echo "❌ Database endpoint not found"
             exit 1
           fi
           
@@ -267,10 +283,8 @@ jobs:
           echo "DB_ENDPOINT=$DB_ENDPOINT" >> $GITHUB_ENV
           echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV
           echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
-          
-          # Also get username for schema deployment
-          DB_USERNAME=$(terraform output -raw rds_master_username 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r' || echo "postgres")
           echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
+          echo "SECRET_ARN=$SECRET_ARN" >> $GITHUB_ENV
           
       - name: Deploy Database Schema
         working-directory: ./infrastructure/database
@@ -282,13 +296,8 @@ jobs:
           SECRET_ARN: ${{ env.SECRET_ARN }}
         run: |
           echo "🚀 Deploying database schema..."
-          
-          # Get secret ARN from terraform
-          cd ../terraform/environments/${{ github.event.inputs.environment || 'dev' }}
-          SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | tr -d '\n\r')
-          export SECRET_ARN
-          
-          cd ../../../database
+          echo "Using database endpoint: $DB_ENDPOINT"
+          echo "Using secret ARN: $SECRET_ARN"
           
           # Make script executable
           chmod +x deploy-schema.sh
@@ -299,14 +308,13 @@ jobs:
           echo "✅ Database schema deployment completed"
           
       - name: Verify Deployment
-        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
         run: |
           echo "🧪 Verifying schema deployment..."
           
-          # Get database connection details
-          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)
-          DB_USERNAME=$(terraform output -raw rds_master_username)
-          SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn)
+          # Use environment variables set in previous steps
+          echo "Database endpoint: $DB_ENDPOINT"
+          echo "Database name: $DB_NAME"
+          echo "Username: $DB_USERNAME"
           
           # Get password from secrets manager
           DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
@@ -336,16 +344,9 @@ jobs:
         run: |
           echo "🌱 Seeding sample data..."
           
-          # Get connection details  
-          cd ../terraform/environments/${{ github.event.inputs.environment || 'dev' }}
-          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)
-          DB_USERNAME=$(terraform output -raw rds_master_username)
-          SECRET_ARN=$(terraform output -raw rds_master_password_secret_arn)
+          # Use environment variables from previous steps
           DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
-          
           CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${DB_PORT}/${DB_NAME}?sslmode=require"
-          
-          cd ../../../database
           
           # Only seed if table is empty
           RECORD_COUNT=$(psql "$CONNECTION_STRING" -t -c "SELECT COUNT(*) FROM business_ideas;")
@@ -360,11 +361,9 @@ jobs:
           
       - name: Generate Deployment Summary
         id: summary
-        working-directory: ./infrastructure/terraform/environments/${{ github.event.inputs.environment || 'dev' }}
         run: |
           echo "📊 Generating deployment summary..."
           
-          DB_ENDPOINT=$(terraform output -raw rds_cluster_endpoint)
           ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
           
           echo "deployment_summary<<EOF" >> $GITHUB_OUTPUT
@@ -374,6 +373,7 @@ jobs:
           echo "**Environment**: \`$ENVIRONMENT\`" >> $GITHUB_OUTPUT
           echo "**Database**: \`$DB_ENDPOINT\`" >> $GITHUB_OUTPUT
           echo "**Schema Version**: $(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+          echo "**Infrastructure**: $([ \"$SKIP_INFRASTRUCTURE\" == \"true\" ] && echo \"Reused existing Aurora cluster\" || echo \"Deployed via Terraform\")" >> $GITHUB_OUTPUT
           echo "" >> $GITHUB_OUTPUT
           echo "### 📋 Deployed Components" >> $GITHUB_OUTPUT
           echo "- ✅ business_ideas table with JSONB storage" >> $GITHUB_OUTPUT
