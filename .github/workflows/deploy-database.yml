@@ -203,37 +203,46 @@ jobs:
           echo "🔍 Checking and deploying infrastructure as needed..."
           terraform init -no-color
           
-          # Check if Aurora database exists
+          # Check if Aurora database exists (both in Terraform state and AWS)
           DB_CHECK=$(terraform output -raw rds_cluster_endpoint 2>&1 || true)
           
+          # Also check if cluster exists in AWS directly
+          CLUSTER_EXISTS=$(aws rds describe-db-clusters --db-cluster-identifier ai-business-factory-db-dev --query 'DBClusters[0].Endpoint' --output text 2>/dev/null || echo "None")
+          
           if [[ "$DB_CHECK" == *"No outputs found"* ]] || [[ "$DB_CHECK" == *"Warning:"* ]] || [[ -z "$DB_CHECK" ]]; then
-            echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
-            
-            # Handle potential resource conflicts with existing AWS resources
-            echo "🔧 Checking for existing resources and handling state drift..."
-            
-            # Try deployment, capture exit code
-            set +e  # Disable exit on error temporarily
-            terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
-            DEPLOY_RESULT=$?
-            set -e  # Re-enable exit on error
-            
-            # If deployment fails due to existing resources, try to import them
-            if [ $DEPLOY_RESULT -ne 0 ]; then
-              echo "⚠️ Deployment failed, likely due to existing resources. Attempting to import..."
+            if [[ "$CLUSTER_EXISTS" != "None" ]]; then
+              echo "✅ Aurora cluster exists in AWS but not in Terraform state"
+              echo "📝 Cluster endpoint from AWS: $CLUSTER_EXISTS"  
+              echo "🚀 Skipping infrastructure deployment, proceeding to schema deployment..."
+            else
+              echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
               
-              # Try to import existing resources (ignore failures)
-              terraform import module.postgresql_cluster.aws_secretsmanager_secret.db_credentials "arn:aws:secretsmanager:us-east-1:519284856023:secret:ai-business-factory-db-dev-credentials-iFQoGn" 2>/dev/null || echo "  - Secret import failed or already exists"
-              terraform import module.postgresql_cluster.aws_db_subnet_group.default[0] "ai-business-factory-db-dev-subnet-group" 2>/dev/null || echo "  - Subnet group import failed or already exists"
-              terraform import module.postgresql_cluster.aws_security_group.rds[0] "sg-089fe5cc28dc8d927" 2>/dev/null || echo "  - Security group import failed or already exists"  
-              terraform import module.postgresql_cluster.aws_cloudwatch_log_group.postgresql "/aws/rds/cluster/ai-business-factory-db-dev/postgresql" 2>/dev/null || echo "  - Log group import failed or already exists"
+              # Handle potential resource conflicts with existing AWS resources
+              echo "🔧 Checking for existing resources and handling state drift..."
               
-              echo "🔄 Retrying deployment after import..."
-              # Retry deployment after import
+              # Try deployment, capture exit code
+              set +e  # Disable exit on error temporarily
               terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
+              DEPLOY_RESULT=$?
+              set -e  # Re-enable exit on error
+              
+              # If deployment fails due to existing resources, try to import them
+              if [ $DEPLOY_RESULT -ne 0 ]; then
+                echo "⚠️ Deployment failed, likely due to existing resources. Attempting to import..."
+                
+                # Try to import existing resources (ignore failures)
+                terraform import module.postgresql_cluster.aws_secretsmanager_secret.db_credentials "arn:aws:secretsmanager:us-east-1:519284856023:secret:ai-business-factory-db-dev-credentials-iFQoGn" 2>/dev/null || echo "  - Secret import failed or already exists"
+                terraform import module.postgresql_cluster.aws_db_subnet_group.default[0] "ai-business-factory-db-dev-subnet-group" 2>/dev/null || echo "  - Subnet group import failed or already exists"
+                terraform import module.postgresql_cluster.aws_security_group.rds[0] "sg-089fe5cc28dc8d927" 2>/dev/null || echo "  - Security group import failed or already exists"  
+                terraform import module.postgresql_cluster.aws_cloudwatch_log_group.postgresql "/aws/rds/cluster/ai-business-factory-db-dev/postgresql" 2>/dev/null || echo "  - Log group import failed or already exists"
+                
+                echo "🔄 Retrying deployment after import..."
+                # Retry deployment after import
+                terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
+              fi
+              
+              echo "✅ Infrastructure deployment completed"
             fi
-            
-            echo "✅ Infrastructure deployment completed"
           else
             echo "✅ Aurora PostgreSQL infrastructure already exists"
             echo "Endpoint: $DB_CHECK"
