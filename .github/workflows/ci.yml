@@ -60,8 +60,20 @@ jobs:
         env:
           CI: true
         run: |
-          npx nx affected --target=build --base=origin/main --head=HEAD --parallel=3 --skip-nx-cache
-          echo "Build command completed with exit code: $?"
+          # Get list of affected projects
+          affected=$(npx nx show projects --affected --base=origin/main --head=HEAD)
+          echo "Affected projects:"
+          echo "$affected"
+          
+          # Build each project individually to avoid hanging
+          echo "$affected" | while read -r project; do
+            if [ -n "$project" ]; then
+              echo "Building $project..."
+              npx nx run "$project:build" || exit 1
+            fi
+          done
+          
+          echo "All builds completed successfully"
         timeout-minutes: 10
 
       - name: Check affected build outputs
