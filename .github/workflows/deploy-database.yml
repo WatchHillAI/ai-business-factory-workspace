@@ -209,8 +209,25 @@ jobs:
           if [[ "$DB_CHECK" == *"No outputs found"* ]] || [[ "$DB_CHECK" == *"Warning:"* ]] || [[ -z "$DB_CHECK" ]]; then
             echo "⚠️ Aurora PostgreSQL infrastructure not found - deploying now..."
             
-            # Deploy ONLY PostgreSQL infrastructure with auto-approve
-            terraform apply -target=module.postgresql_cluster -auto-approve -no-color
+            # Handle potential resource conflicts with existing AWS resources
+            echo "🔧 Checking for existing resources and handling state drift..."
+            
+            # Deploy with refresh to handle existing resources
+            terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
+            
+            # If deployment fails due to existing resources, try to import them
+            if [ $? -ne 0 ]; then
+              echo "⚠️ Deployment failed, likely due to existing resources. Attempting to import..."
+              
+              # Try to import existing resources (ignore failures)
+              terraform import -ignore-missing-config module.postgresql_cluster.aws_secretsmanager_secret.db_credentials "arn:aws:secretsmanager:us-east-1:519284856023:secret:ai-business-factory-db-dev-credentials-iFQoGn" || true
+              terraform import -ignore-missing-config module.postgresql_cluster.aws_db_subnet_group.default[0] "ai-business-factory-db-dev-subnet-group" || true  
+              terraform import -ignore-missing-config module.postgresql_cluster.aws_security_group.rds[0] "sg-089fe5cc28dc8d927" || true
+              terraform import -ignore-missing-config module.postgresql_cluster.aws_cloudwatch_log_group.postgresql "/aws/rds/cluster/ai-business-factory-db-dev/postgresql" || true
+              
+              # Retry deployment after import
+              terraform apply -target=module.postgresql_cluster -auto-approve -no-color -refresh=true
+            fi
             
             echo "✅ Infrastructure deployment completed"
           else
