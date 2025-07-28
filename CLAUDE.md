@@ -476,3 +476,43 @@ The AI Business Factory has achieved a **revolutionary breakthrough** with the c
 **Current Focus**: Implementing persistent storage for AI-generated business ideas using PostgreSQL JSONB architecture. Database schema is ready (ADR-003), Aurora PostgreSQL is deployed, and CI/CD is working. Next steps are to deploy the schema via GitHub Actions and implement Lambda CRUD APIs to save and retrieve business intelligence data.
 
 **Technical Achievement**: Fixed complex git tracking issues where directories were marked as gitlinks without being submodules. Resolved by removing from git index and re-adding. All TypeScript packages now have proper project.json and tsconfig.json files.
+
+## 🚨 **TERRAFORM STATE MANAGEMENT PROTOCOL**
+
+### **State Drift Prevention (Critical)**
+
+Following ADR-004, always verify Terraform state consistency to prevent deployment failures:
+
+#### **Pre-Deployment Checklist**:
+```bash
+# 1. Verify state consistency before major deployments
+cd infrastructure/terraform/environments/dev
+terraform plan -detailed-exitcode
+
+# 2. Check for resource drift
+terraform refresh
+
+# 3. Validate outputs match expectations
+terraform output
+
+# 4. If state drift detected, import existing resources:
+terraform import module.resource.name "resource-id"
+```
+
+#### **Development Workflow Rules**:
+- **Use dedicated AWS accounts** for development to prevent state fragmentation
+- **Never manually create AWS resources** that Terraform should manage
+- **Always commit Terraform state changes** after successful deployments
+- **Verify GitHub Actions can access** the same resources as local development
+
+#### **CI/CD State Verification**:
+- GitHub Actions workflows include state drift detection via `terraform plan -detailed-exitcode`
+- Automated state backup before infrastructure changes
+- Resource import procedures for common state drift scenarios
+
+#### **Emergency State Recovery**:
+If state drift blocks deployment:
+1. **Document the issue** in an ADR (see ADR-004 as template)
+2. **Import existing resources** locally to fix state
+3. **Verify consistency** between local and CI/CD states
+4. **Update prevention measures** to avoid recurrence
