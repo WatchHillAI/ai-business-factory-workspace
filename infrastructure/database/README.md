@@ -12,4 +12,4 @@ This directory contains the PostgreSQL JSONB schema for business ideas persisten
 
 Schema is automatically deployed via GitHub Actions when changes are pushed to main branch.
 
-**Status**: Ready for deployment (July 28, 2025)
+**Status**: Ready for deployment (July 28, 2025) - IAM permissions fixed
