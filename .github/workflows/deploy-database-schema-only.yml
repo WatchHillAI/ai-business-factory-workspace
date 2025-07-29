@@ -1,0 +1,181 @@
+name: Deploy Database Schema Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-schema:
+    name: Deploy Schema to Existing Aurora Cluster
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+          
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client jq
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          role-session-name: GitHubActions-DatabaseSchemaDeployment
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Get Database Connection Details
+        run: |
+          echo "🔍 Getting Aurora cluster connection details from AWS..."
+          
+          # Get cluster details directly from AWS
+          CLUSTER_DATA=$(aws rds describe-db-clusters --db-cluster-identifier ai-business-factory-db-dev --output json)
+          DB_ENDPOINT=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].Endpoint')
+          DB_PORT=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].Port // 5432')
+          DB_NAME=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].DatabaseName // "ai_business_factory"')
+          DB_USERNAME=$(echo "$CLUSTER_DATA" | jq -r '.DBClusters[0].MasterUsername // "postgres"')
+          
+          # Get secret ARN for password retrieval
+          SECRET_ARN=$(aws secretsmanager list-secrets --filters Key=name,Values=ai-business-factory-db-dev-credentials --query 'SecretList[0].ARN' --output text)
+          
+          if [ -z "$DB_ENDPOINT" ] || [ "$DB_ENDPOINT" == "null" ]; then
+            echo "❌ Aurora cluster not found in AWS"
+            exit 1
+          fi
+          
+          echo "✅ Found Aurora cluster: $DB_ENDPOINT"
+          echo "DB_ENDPOINT=$DB_ENDPOINT" >> $GITHUB_ENV
+          echo "DB_PORT=$DB_PORT" >> $GITHUB_ENV
+          echo "DB_NAME=$DB_NAME" >> $GITHUB_ENV
+          echo "DB_USERNAME=$DB_USERNAME" >> $GITHUB_ENV
+          echo "SECRET_ARN=$SECRET_ARN" >> $GITHUB_ENV
+          
+      - name: Deploy Database Schema
+        working-directory: ./infrastructure/database
+        env:
+          DB_ENDPOINT: ${{ env.DB_ENDPOINT }}
+          DB_PORT: ${{ env.DB_PORT }}
+          DB_NAME: ${{ env.DB_NAME }}
+          DB_USERNAME: ${{ env.DB_USERNAME }}
+          SECRET_ARN: ${{ env.SECRET_ARN }}
+        run: |
+          echo "🚀 Deploying database schema..."
+          echo "Using database endpoint: $DB_ENDPOINT"
+          echo "Using secret ARN: $SECRET_ARN"
+          
+          # Make script executable
+          chmod +x deploy-schema.sh
+          
+          # Run deployment script
+          ./deploy-schema.sh
+          
+          echo "✅ Database schema deployment completed"
+          
+      - name: Verify Deployment
+        run: |
+          echo "🧪 Verifying schema deployment..."
+          
+          # Get password from secrets manager
+          DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
+          
+          # Test connection and verify tables
+          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${DB_PORT}/${DB_NAME}?sslmode=require"
+          
+          echo "Testing database connection..."
+          psql "$CONNECTION_STRING" -c "SELECT version();" > /dev/null
+          
+          echo "Verifying business_ideas table..."
+          TABLE_EXISTS=$(psql "$CONNECTION_STRING" -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'business_ideas');")
+          
+          if [[ "$TABLE_EXISTS" =~ "t" ]]; then
+            echo "✅ business_ideas table verified"
+          else
+            echo "❌ business_ideas table not found"
+            exit 1
+          fi
+          
+          echo "Checking indexes..."
+          INDEX_COUNT=$(psql "$CONNECTION_STRING" -t -c "SELECT COUNT(*) FROM pg_indexes WHERE tablename = 'business_ideas';")
+          echo "✅ Created $INDEX_COUNT indexes on business_ideas table"
+          
+      - name: Seed Sample Data (Optional)
+        working-directory: ./infrastructure/database
+        run: |
+          echo "🌱 Seeding sample data..."
+          
+          # Get password from secrets manager
+          DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text | jq -r .password)
+          CONNECTION_STRING="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_ENDPOINT}:${DB_PORT}/${DB_NAME}?sslmode=require"
+          
+          # Only seed if table is empty
+          RECORD_COUNT=$(psql "$CONNECTION_STRING" -t -c "SELECT COUNT(*) FROM business_ideas;")
+          
+          if [ "$RECORD_COUNT" -eq 0 ]; then
+            echo "📝 Inserting sample data..."
+            psql "$CONNECTION_STRING" -f seed-sample-data.sql
+            echo "✅ Sample data inserted"
+          else
+            echo "ℹ️ Table already has $RECORD_COUNT records, skipping sample data"
+          fi
+          
+      - name: Generate Deployment Summary
+        id: summary
+        run: |
+          echo "📊 Database Schema Deployment Summary"
+          echo ""
+          echo "**Status**: ✅ Deployed Successfully"
+          echo "**Environment**: \`${{ github.event.inputs.environment || 'dev' }}\`"
+          echo "**Database**: \`$DB_ENDPOINT\`"
+          echo "**Schema Version**: $(date +%Y%m%d-%H%M%S)"
+          echo ""
+          echo "### 📋 Deployed Components"
+          echo "- ✅ business_ideas table with JSONB storage"
+          echo "- ✅ Performance indexes (GIN, B-tree, full-text)"
+          echo "- ✅ Helper functions for CRUD operations"
+          echo "- ✅ Sample data (3 comprehensive business ideas)"
+          echo ""
+          echo "### 🔗 Next Steps"
+          echo "1. Implement CRUD API endpoints for business ideas"
+          echo "2. Update AI orchestrator to persist analysis results"
+          echo "3. Connect Ideas PWA to database queries"
+          echo ""
+          echo "**Workflow**: ${{ github.workflow }} #${{ github.run_number }}"
+          echo "**Commit**: ${{ github.sha }}"
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-schema]
+    if: always()
+    
+    steps:
+      - name: Deployment Success Notification
+        if: needs.deploy-schema.result == 'success'
+        run: |
+          echo "🎉 Database schema deployment completed successfully!"
+          echo "PostgreSQL JSONB storage is now ready for AI-generated business ideas."
+          
+      - name: Deployment Failure Notification
+        if: needs.deploy-schema.result == 'failure'
+        run: |
+          echo "❌ Database schema deployment failed!"
+          echo "Please check the workflow logs and database connection details."
+          exit 1
