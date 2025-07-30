@@ -1,5 +1,7 @@
 import { BusinessIdea } from '../types';
 import { sampleIdeas } from '../data/sampleIdeas';
+import { databaseService } from './databaseService';
+import { DetailedIdea } from '../types/detailedIdea';
 
 /**
  * AI Service for generating business ideas
@@ -16,16 +18,45 @@ export class AIService {
   }
   
   /**
-   * Generate business ideas - uses AI if enabled, otherwise sample data
+   * Generate business ideas - uses database first, then AI generation, fallback to sample data
    */
   async generateIdeas(): Promise<BusinessIdea[]> {
     const useAI = import.meta.env.VITE_USE_AI_GENERATION === 'true';
+    const usePersistence = import.meta.env.VITE_USE_DATABASE_PERSISTENCE === 'true';
     
     console.log('🔍 AI Service Debug:');
     console.log('- VITE_USE_AI_GENERATION:', import.meta.env.VITE_USE_AI_GENERATION);
+    console.log('- VITE_USE_DATABASE_PERSISTENCE:', import.meta.env.VITE_USE_DATABASE_PERSISTENCE);
     console.log('- useAI flag:', useAI);
-    console.log('- Will use AI:', useAI ? 'YES' : 'NO');
+    console.log('- usePersistence flag:', usePersistence);
     
+    // Try loading from database first if persistence is enabled
+    if (usePersistence) {
+      try {
+        console.log('🗃️ Loading business ideas from database...');
+        const dbResult = await databaseService.listIdeas({ 
+          limit: 10, 
+          sortBy: 'created_at', 
+          sortOrder: 'DESC' 
+        });
+        
+        if (dbResult.ideas.length > 0) {
+          console.log('✅ Loaded ideas from database:', {
+            count: dbResult.ideas.length,
+            total: dbResult.pagination.total
+          });
+          
+          // Transform database results to BusinessIdea format
+          return this.transformDatabaseIdeasToBusinessIdeas(dbResult.ideas);
+        } else {
+          console.log('📝 No ideas found in database, proceeding with AI generation...');
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Failed to load from database, proceeding with AI generation:', dbError);
+      }
+    }
+    
+    // Fall back to AI generation or sample data
     if (!useAI) {
       console.log('AI generation disabled, using sample data');
       return sampleIdeas;
@@ -113,10 +144,11 @@ export class AIService {
   
   /**
    * Generate detailed business analysis for a specific idea
-   * ENABLED: Real orchestrator with all 4 agents working
+   * ENABLED: Real orchestrator with all 4 agents working + Database persistence
    */
   async generateDetailedAnalysis(ideaTitle: string, ideaDescription: string): Promise<any> {
     const useAI = import.meta.env.VITE_USE_AI_GENERATION === 'true';
+    const usePersistence = import.meta.env.VITE_USE_DATABASE_PERSISTENCE === 'true';
     
     if (!useAI) {
       console.log('AI analysis disabled, using sample detail data');
@@ -129,7 +161,38 @@ export class AIService {
       console.log('✅ Creating comprehensive AI business intelligence');
       
       // Generate detailed AI analysis matching the selected idea
-      return this.generateAIDetailedAnalysis(ideaTitle, ideaDescription);
+      const analysisResult = await this.generateAIDetailedAnalysis(ideaTitle, ideaDescription);
+      
+      // Save to database if persistence is enabled
+      if (usePersistence && analysisResult) {
+        try {
+          console.log('💾 Saving AI analysis to database...');
+          const savedResult = await databaseService.saveIdea(analysisResult);
+          console.log('✅ AI analysis saved to database:', {
+            id: savedResult.id,
+            title: analysisResult.title,
+            created_at: savedResult.created_at
+          });
+          
+          // Return the analysis with database metadata
+          return {
+            ...analysisResult,
+            id: savedResult.id,
+            created_at: savedResult.created_at,
+            updated_at: savedResult.updated_at,
+            dataFreshness: {
+              ...analysisResult.dataFreshness,
+              persistedAt: savedResult.created_at,
+              databaseId: savedResult.id
+            }
+          };
+        } catch (dbError) {
+          console.warn('⚠️ Failed to save AI analysis to database, proceeding without persistence:', dbError);
+          // Continue with in-memory result even if database save fails
+        }
+      }
+      
+      return analysisResult;
       
     } catch (error) {
       console.warn('AI detailed analysis failed, falling back to sample data:', error);
@@ -613,6 +676,83 @@ export class AIService {
     
     console.log(`✅ Generated ${ideas.length} AI-powered business ideas (NO sample data)`);
     return ideas;
+  }
+
+  /**
+   * Transform database idea summaries to BusinessIdea format for main list view
+   */
+  private transformDatabaseIdeasToBusinessIdeas(dbIdeas: any[]): BusinessIdea[] {
+    console.log('🔄 Transforming database ideas to BusinessIdea format...');
+
+    return dbIdeas.map(dbIdea => ({
+      id: dbIdea.id,
+      title: dbIdea.title,
+      description: dbIdea.description,
+      icon: this.getTierIcon(dbIdea.tier),
+      category: 'ai-automation', // Default category
+      tier: dbIdea.tier as 'public' | 'exclusive' | 'ai-generated',
+      metrics: {
+        marketSize: this.formatMarketSize(dbIdea.market_size_tam),
+        techLevel: 'AI Analyzed',
+        timeToLaunch: '6 months', // Default
+        startupCost: '$100K', // Default
+        targetMarket: 'Various',
+        growthRate: 'Strong',
+        successProbability: `${dbIdea.confidence_overall}%`
+      },
+      socialProof: {
+        trending: dbIdea.confidence_overall > 80,
+        tags: ['💾 Saved', '🧠 AI Analysis', dbIdea.tier === 'ai-generated' ? '✨ Generated' : '🚀 Curated']
+      },
+      generatedBy: 'AI Business Factory - Database',
+      validationScore: dbIdea.confidence_overall,
+      createdAt: new Date(dbIdea.created_at),
+      updatedAt: new Date(dbIdea.updated_at)
+    }));
+  }
+
+  /**
+   * Get tier icon for database ideas
+   */
+  private getTierIcon(tier: string): string {
+    switch (tier) {
+      case 'exclusive': return '👑';
+      case 'ai-generated': return '✨';
+      default: return '🚀';
+    }
+  }
+
+  /**
+   * Format market size from database TAM value
+   */
+  private formatMarketSize(tam: number): string {
+    if (!tam || tam === 0) return 'TBD';
+    if (tam >= 1000000000000) return `$${(tam / 1000000000000).toFixed(1)}T`;
+    if (tam >= 1000000000) return `$${(tam / 1000000000).toFixed(1)}B`;
+    if (tam >= 1000000) return `$${(tam / 1000000).toFixed(1)}M`;
+    return `$${tam}`;
+  }
+
+  /**
+   * Load a specific detailed idea from database by ID
+   */
+  async loadDetailedIdeaFromDatabase(ideaId: string): Promise<DetailedIdea | null> {
+    const usePersistence = import.meta.env.VITE_USE_DATABASE_PERSISTENCE === 'true';
+    
+    if (!usePersistence) {
+      console.log('Database persistence disabled');
+      return null;
+    }
+
+    try {
+      console.log('🔍 Loading detailed idea from database:', ideaId);
+      const idea = await databaseService.getIdea(ideaId);
+      console.log('✅ Detailed idea loaded from database:', idea.title);
+      return idea;
+    } catch (error) {
+      console.error('❌ Failed to load detailed idea from database:', error);
+      return null;
+    }
   }
 }
 

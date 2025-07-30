@@ -20,7 +20,7 @@ cp ../../database/schemas/business_ideas_schema.sql dist/
 # Install production dependencies
 cd dist
 npm init -y > /dev/null
-npm install --production pg@8.11.3
+npm install --production pg@8.11.3 aws-sdk@2.1528.0
 
 # Create deployment package
 zip -r ../lambda.zip . > /dev/null

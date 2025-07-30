@@ -87,6 +87,22 @@ const AppContent: React.FC = () => {
     setDetailedIdea(null);
     
     try {
+      // First try to load from database if it's a UUID (database-stored idea)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ideaId);
+      
+      if (isUUID) {
+        console.log('🗃️ Loading detailed idea from database:', ideaId);
+        const databaseIdea = await aiService.loadDetailedIdeaFromDatabase(ideaId);
+        
+        if (databaseIdea) {
+          console.log('✅ Detailed idea loaded from database:', databaseIdea.title);
+          setDetailedIdea(databaseIdea);
+          setIsLoadingDetail(false);
+          return;
+        }
+      }
+      
+      // If not found in database or not a UUID, generate new analysis
       console.log('🔍 Generating detailed analysis for:', selectedIdea.title);
       const detailedAnalysis = await aiService.generateDetailedAnalysis(
         selectedIdea.title,

@@ -1,0 +1,26 @@
+{
+  "name": "business-ideas-crud-api",
+  "version": "1.0.0",
+  "description": "CRUD API for AI-generated business ideas with PostgreSQL JSONB storage",
+  "main": "index.js",
+  "dependencies": {
+    "pg": "^8.11.3",
+    "aws-sdk": "^2.1528.0"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "test": "echo \"Run integration tests with deployed Lambda\"",
+    "build": "./build.sh"
+  },
+  "keywords": [
+    "crud",
+    "api",
+    "business-ideas",
+    "postgresql",
+    "jsonb",
+    "lambda",
+    "aws"
+  ]
+}

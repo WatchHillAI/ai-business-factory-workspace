@@ -1,6 +1,25 @@
 const { Client } = require('pg');
-const AWS = require('aws-sdk');
 const fs = require('fs').promises;
+
+// Use AWS SDK v3 or built-in for Lambda
+let AWS;
+try {
+    AWS = require('aws-sdk'); // Try v2 first
+} catch (e) {
+    // Fallback to built-in AWS SDK in Lambda runtime
+    const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+    AWS = {
+        SecretsManager: class {
+            constructor() {
+                this.client = new SecretsManagerClient({ region: process.env.AWS_REGION || 'us-east-1' });
+            }
+            async getSecretValue(params) {
+                const command = new GetSecretValueCommand(params);
+                return { promise: () => this.client.send(command) };
+            }
+        }
+    };
+}
 
 const secretsManager = new AWS.SecretsManager();
 
