@@ -591,6 +591,9 @@ module "ai_agent_orchestrator" {
   })
 }
 
+# =================== BUSINESS IDEAS CRUD API ===================
+# Moved to business-ideas-api.tf for focused deployment
+
 # AI Agent Orchestrator API Gateway
 module "ai_agent_orchestrator_api" {
   source = "../../modules/api-gateway-lambda"
