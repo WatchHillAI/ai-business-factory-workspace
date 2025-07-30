@@ -93,7 +93,7 @@ data "aws_rds_cluster" "postgresql" {
   cluster_identifier = "ai-business-factory-db-dev"
 }
 
-# Business Ideas CRUD API
+# Business Ideas CRUD API - Force state refresh to detect missing API Gateway deployment
 module "business_ideas_api" {
   source = "../../modules/business-ideas-api"
 
