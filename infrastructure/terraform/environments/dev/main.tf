@@ -14,7 +14,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = {
       Environment = var.environment
@@ -51,7 +51,7 @@ variable "environment" {
 locals {
   account_id = data.aws_caller_identity.current.account_id
   region     = data.aws_region.current.name
-  
+
   common_tags = {
     Environment = var.environment
     Project     = var.project_name
@@ -61,15 +61,15 @@ locals {
 # GitHub OIDC Provider for CI/CD
 module "github_oidc" {
   source = "../../modules/github-oidc"
-  
+
   project_name      = var.project_name
   environment       = var.environment
   aws_region        = var.aws_region
   github_repository = "WatchHillAI/ai-business-factory-workspace"
-  
+
   github_branches = [
     "main",
-    "develop", 
+    "develop",
     "feature/live-ai-integration"
   ]
 }
@@ -96,21 +96,21 @@ data "aws_rds_cluster" "postgresql" {
 # Business Ideas CRUD API
 module "business_ideas_api" {
   source = "../../modules/business-ideas-api"
-  
+
   project_name = var.project_name
   environment  = var.environment
   aws_region   = var.aws_region
-  
+
   # Database connection - use existing Aurora cluster
   db_endpoint   = data.aws_rds_cluster.postgresql.endpoint
   db_port       = tostring(data.aws_rds_cluster.postgresql.port)
   db_name       = data.aws_rds_cluster.postgresql.database_name
   db_secret_arn = "arn:aws:secretsmanager:us-east-1:519284856023:secret:ai-business-factory-db-dev-credentials-iFQoGn"
-  
+
   # VPC configuration for Lambda
   subnet_ids         = data.aws_subnets.default.ids
-  security_group_ids = ["sg-089fe5cc28dc8d927"]  # Aurora cluster security group
-  
+  security_group_ids = ["sg-089fe5cc28dc8d927"] # Aurora cluster security group
+
   tags = merge(local.common_tags, {
     Service = "business-ideas-crud"
     Type    = "api"
