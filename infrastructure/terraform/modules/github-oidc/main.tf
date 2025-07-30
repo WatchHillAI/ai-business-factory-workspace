@@ -131,7 +131,8 @@ resource "aws_iam_policy" "database_deployment" {
           "logs:TagLogGroup"
         ]
         Resource = [
-          "arn:aws:logs:${var.aws_region}:*:log-group:/aws/rds/cluster/${var.project_name}-*"
+          "arn:aws:logs:${var.aws_region}:*:log-group:/aws/rds/cluster/${var.project_name}-*",
+          "arn:aws:logs:${var.aws_region}:*:log-group:/aws/rds/cluster/*"
         ]
       },
       {
@@ -166,6 +167,44 @@ resource "aws_iam_policy" "database_deployment" {
         Resource = [
           "arn:aws:dynamodb:${var.aws_region}:*:table/${var.project_name}-terraform-locks-${var.environment}"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          # Additional IAM permissions for resource creation
+          "iam:GetRole",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:PassRole",
+          "iam:TagRole",
+          "iam:UntagRole"
+        ]
+        Resource = [
+          "arn:aws:iam::*:role/${var.project_name}-*",
+          "arn:aws:iam::*:role/rds-*"
+        ]
+      },
+      { 
+        Effect = "Allow"
+        Action = [
+          # KMS permissions for RDS encryption
+          "kms:Describe*",
+          "kms:List*",
+          "kms:CreateGrant",
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*"
+        ]
+        Resource = "*"
       }
     ]
   })
