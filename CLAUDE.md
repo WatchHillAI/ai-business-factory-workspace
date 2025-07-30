@@ -1,5 +1,8 @@
 # Claude AI Assistant Notes
 
+## 🔄 Session Continuity
+**IMPORTANT**: If continuing from a previous session, check [session-handoff.md](./session-handoff.md) for current status and context.
+
 ## Project Overview
 AI Business Factory PWA Workspace - A revolutionary shared monorepo for AI-powered Progressive Web Applications featuring advanced business intelligence. The Ideas PWA transforms simple business concepts into comprehensive, actionable insights using sophisticated AI agents.
 
