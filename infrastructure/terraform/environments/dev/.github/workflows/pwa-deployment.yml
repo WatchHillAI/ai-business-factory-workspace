@@ -1,0 +1,179 @@
+name: PWA Deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'domains/**'
+      - 'packages/**'
+      - '.github/workflows/pwa-deployment.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'domains/**'
+      - 'packages/**'
+      - '.github/workflows/pwa-deployment.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: 18
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    name: Test and Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run typecheck
+
+      - name: Build applications
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+          retention-days: 7
+
+  deploy:
+    name: Deploy to AWS
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: development
+    needs: [test]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: pwa-deployment-session
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy BMC PWA to S3
+        run: |
+          aws s3 sync dist/apps/bmc-pwa/ s3://ai-business-factory-pwa-workspace-dev/bmc-pwa/ \
+            --delete \
+            --cache-control "public, max-age=31536000" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          
+          # HTML and JSON files with shorter cache
+          aws s3 sync dist/apps/bmc-pwa/ s3://ai-business-factory-pwa-workspace-dev/bmc-pwa/ \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --include "*.html" \
+            --include "*.json"
+
+      - name: Deploy Ideas PWA to S3
+        run: |
+          aws s3 sync dist/apps/idea-cards-pwa/ s3://ai-business-factory-pwa-workspace-dev/ideas-pwa/ \
+            --delete \
+            --cache-control "public, max-age=31536000" \
+            --exclude "*.html" \
+            --exclude "*.json"
+          
+          # HTML and JSON files with shorter cache
+          aws s3 sync dist/apps/idea-cards-pwa/ s3://ai-business-factory-pwa-workspace-dev/ideas-pwa/ \
+            --cache-control "public, max-age=0, must-revalidate" \
+            --include "*.html" \
+            --include "*.json"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          # Get CloudFront distribution IDs
+          BMC_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='BMC PWA Distribution'].Id" \
+            --output text)
+          
+          IDEAS_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='Ideas PWA Distribution'].Id" \
+            --output text)
+          
+          # Invalidate BMC PWA
+          if [ ! -z "$BMC_DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $BMC_DISTRIBUTION_ID \
+              --paths "/*"
+          fi
+          
+          # Invalidate Ideas PWA  
+          if [ ! -z "$IDEAS_DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $IDEAS_DISTRIBUTION_ID \
+              --paths "/*"
+          fi
+
+      - name: Health Check
+        run: |
+          echo "Waiting for deployments to propagate..."
+          sleep 30
+          
+          # Health check BMC PWA
+          BMC_URL="https://d1u91xxklexz0v.cloudfront.net"
+          if curl -f -s "$BMC_URL" > /dev/null; then
+            echo "✅ BMC PWA is healthy: $BMC_URL"
+          else
+            echo "❌ BMC PWA health check failed: $BMC_URL"
+            exit 1
+          fi
+          
+          # Health check Ideas PWA
+          IDEAS_URL="https://dc275i5wdcepx.cloudfront.net"
+          if curl -f -s "$IDEAS_URL" > /dev/null; then
+            echo "✅ Ideas PWA is healthy: $IDEAS_URL"
+          else
+            echo "❌ Ideas PWA health check failed: $IDEAS_URL"
+            exit 1
+          fi
+
+  notify:
+    name: Notify Deployment Status
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [test, deploy]
+    
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Status**: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deploy Status**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **BMC PWA**: https://d1u91xxklexz0v.cloudfront.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Ideas PWA**: https://dc275i5wdcepx.cloudfront.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed At**: $(date -u)" >> $GITHUB_STEP_SUMMARY
