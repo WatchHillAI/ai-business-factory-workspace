@@ -1,5 +1,6 @@
-# Focused configuration for Business Ideas CRUD API
-# This allows deployment without missing module dependencies
+# Business Ideas CRUD API Configuration
+# Deploys API Gateway, Lambda function, and all required integrations
+# This fixes the missing deployment stage and integration issues
 
 # Data sources for VPC configuration
 data "aws_vpc" "default" {
